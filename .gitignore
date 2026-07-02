@@ -1,0 +1,30 @@
+# Данные и датасеты
+data/
+*.tar.gz
+*.npy
+*.mat
+*.pt
+*.pth
+
+# Логи и артефакты Hydra / PyTorch Lightning
+outputs/
+multirun/
+lightning_logs/
+checkpoints/
+.hydra/
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Настройки macOS и VS Code
+.DS_Store
+.vscode/
+.idea/
+
+# Виртуальные окружения
+venv/
+.venv/
+env/
