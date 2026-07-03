@@ -1,3 +1,2 @@
-adam:
-  name: adam
-  lr: 0.001
+name: adam
+lr: 0.001

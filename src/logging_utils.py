@@ -1,102 +1,113 @@
-
 import json
 import os
-import torch
-import pandas as pd
+import subprocess
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-def save_run_metadata(output_dir, run_id, config, best_epoch=None, best_val_loss=None, seed=None, dataset_split=None, checkpoint_path=None):
+import pandas as pd
+import pytorch_lightning as pl
+import torch
+
+TRAJECTORY_COLUMNS = [
+    "sample_id", "split", "epoch", "noisy_label", "clean_label",
+    "per_sample_loss", "per_sample_probs",
+]
+
+
+def _git_commit() -> Optional[str]:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    except Exception:
+        return None
+
+
+def save_run_metadata(output_dir, run_id, config, **kwargs):
     metadata = {
         "run_id": run_id,
         "timestamp": datetime.now().isoformat(),
-        "config": config,  # Save the resolved Hydra config
-        "best_epoch": best_epoch,
-        "best_val_loss": best_val_loss,
-        "seed": seed,
-        "dataset_split": dataset_split,
-        "checkpoint_path": checkpoint_path
+        "git_commit": _git_commit(),
+        "config": config,
+        **kwargs,
     }
-    os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, "run_metadata.json"), "w") as f:
-        json.dump(metadata, f, indent=4)
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    with open(Path(output_dir) / "run_metadata.json", "w") as f:
+        json.dump(metadata, f, indent=2)
+
 
 def save_metrics(output_dir, metrics):
-    os.makedirs(output_dir, exist_ok=True)
-    with open(os.path.join(output_dir, "metrics.json"), "w") as f:
-        json.dump(metrics, f, indent=4)
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    with open(Path(output_dir) / "metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
 
-def save_trajectory_batch(output_dir, epoch, batch_data):
-    # batch_data contains per_sample_loss, per_sample_probs, noisy_labels, clean_labels, sample_ids
-    os.makedirs(os.path.join(output_dir, "trajectories"), exist_ok=True)
-    
-    # Convert tensors to numpy arrays for saving
-    per_sample_loss_np = batch_data["per_sample_loss"].numpy()
-    per_sample_probs_np = batch_data["per_sample_probs"].numpy()
-    noisy_labels_np = batch_data["noisy_labels"].numpy()
-    clean_labels_np = batch_data["clean_labels"].numpy()
-    sample_ids_np = batch_data["sample_ids"].numpy()
 
-    # Create a DataFrame for this batch
-    batch_df = pd.DataFrame({
-        "sample_id": sample_ids_np,
-        "epoch": epoch,
-        "noisy_label": noisy_labels_np,
-        "clean_label": clean_labels_np,
-        "per_sample_loss": per_sample_loss_np,
-        "per_sample_probs": list(per_sample_probs_np) # Store probabilities as list of arrays
-    })
-    
-    # Save each batch individually for now. Later, these can be aggregated.
-    # Using a unique filename for each batch to avoid overwriting.
-    batch_filename = os.path.join(output_dir, "trajectories", f"epoch_{epoch}_batch_{datetime.now().strftime("%H%M%S%f")}.csv")
-    batch_df.to_csv(batch_filename, index=False)
+def save_trajectory_batch(output_dir: str, epoch: int, split: str, batch_data: dict) -> Path:
+    rows = []
+    loss = batch_data["per_sample_loss"].cpu().numpy()
+    probs = batch_data["per_sample_probs"].cpu().numpy()
+    for i in range(len(loss)):
+        rows.append({
+            "sample_id": int(batch_data["sample_ids"][i]),
+            "split": split,
+            "epoch": epoch,
+            "noisy_label": int(batch_data["noisy_labels"][i]),
+            "clean_label": int(batch_data["clean_labels"][i]),
+            "per_sample_loss": float(loss[i]),
+            "per_sample_probs": probs[i].tolist(),
+        })
+    traj_dir = Path(output_dir) / "trajectories"
+    traj_dir.mkdir(parents=True, exist_ok=True)
+    path = traj_dir / f"epoch_{epoch:03d}_{split}_batch_{batch_data.get('batch_idx', 0):04d}.csv"
+    pd.DataFrame(rows).to_csv(path, index=False)
+    return path
 
-def generate_report(output_dir, run_id, config, metrics, additional_notes=None):
-    report_path = os.path.join(output_dir, "report.md")
-    with open(report_path, "w") as f:
+
+def validate_trajectory_schema(df: pd.DataFrame) -> None:
+    missing = set(TRAJECTORY_COLUMNS) - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing trajectory columns: {missing}")
+
+
+class TrajectoryLoggerCallback(pl.Callback):
+    def __init__(self, output_dir: str):
+        self.output_dir = output_dir
+
+    def _save(self, trainer, outputs, split: str):
+        if isinstance(outputs, dict) and "trajectory" in outputs:
+            t = outputs["trajectory"]
+            t["batch_idx"] = outputs.get("batch_idx", 0)
+            save_trajectory_batch(self.output_dir, trainer.current_epoch, split, t)
+
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        if isinstance(outputs, dict):
+            outputs["batch_idx"] = batch_idx
+        self._save(trainer, outputs, "train")
+
+    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0):
+        if isinstance(outputs, dict):
+            outputs["batch_idx"] = batch_idx
+        self._save(trainer, outputs, "val")
+
+
+def generate_report(output_dir, run_id, config, metrics, metadata=None, notes=None):
+    md = Path(output_dir) / "report.md"
+    meta = metadata or {}
+    with open(md, "w") as f:
         f.write(f"# Experiment Report: {run_id}\n\n")
-        f.write("## Configuration\n")
-        f.write(f"```yaml\n{json.dumps(config, indent=2)}\n```\n\n")
-        f.write("## Metrics\n")
-        f.write(f"```json\n{json.dumps(metrics, indent=2)}\n```\n\n")
-        f.write("## Generated Artifacts\n")
-        f.write(f"- `config.yaml`\n")
-        f.write(f"- `metrics.json`\n")
-        f.write(f"- `run_metadata.json`\n")
-        f.write(f"- `report.md`\n")
-        f.write(f"- `trajectories/` (per-sample logs)\n\n")
-
-        if additional_notes:
-            f.write("## Notes\n")
-            f.write(f"{additional_notes}\n\n")
-    print(f"Report generated at {report_path}")
-
-
-# Example usage (for testing purposes)
-if __name__ == "__main__":
-    dummy_output_dir = "./test_output"
-    os.makedirs(dummy_output_dir, exist_ok=True)
-
-    # Dummy config and metrics
-    dummy_config = {"dataset": {"name": "cifar10n", "val_ratio": 0.1}, "model": {"name": "resnet18"}}
-    dummy_metrics = {"train_loss": 0.5, "val_loss": 0.8, "val_acc": 0.7}
-    dummy_run_id = "test_run_123"
-
-    save_run_metadata(dummy_output_dir, dummy_run_id, dummy_config, best_epoch=5, best_val_loss=0.75, seed=42, checkpoint_path="checkpoints/best.ckpt")
-    save_metrics(dummy_output_dir, dummy_metrics)
-
-    # Dummy batch data for trajectory logging
-    batch_data = {
-        "per_sample_loss": torch.tensor([0.1, 0.2, 0.3]),
-        "per_sample_probs": torch.tensor([[0.1, 0.9], [0.8, 0.2], [0.5, 0.5]]),
-        "noisy_labels": torch.tensor([1, 0, 1]),
-        "clean_labels": torch.tensor([1, 1, 0]),
-        "sample_ids": torch.tensor([100, 101, 102])
-    }
-    save_trajectory_batch(dummy_output_dir, epoch=1, batch_data=batch_data)
-
-    # Generate a dummy report
-    generate_report(dummy_output_dir, dummy_run_id, dummy_config, dummy_metrics, additional_notes="Initial dummy run for testing logging utilities.")
-
-    print(f"Test output saved to {dummy_output_dir}")
-
+        f.write("## Configuration\n```yaml\n")
+        f.write(json.dumps(config, indent=2))
+        f.write("\n```\n\n## Dataset\n")
+        f.write(f"- name: {config.get('dataset', {}).get('name')}\n")
+        f.write(f"- noisy_split: {config.get('dataset', {}).get('noisy_split')}\n")
+        f.write(f"- val_ratio: {config.get('dataset', {}).get('val_ratio')}\n\n")
+        f.write("## Checkpoint\n")
+        f.write(f"- path: {meta.get('checkpoint_path')}\n")
+        f.write(f"- best_epoch: {meta.get('best_epoch')}\n")
+        f.write(f"- best_val_loss: {meta.get('best_val_loss')}\n\n")
+        f.write("## Metrics\n```json\n")
+        f.write(json.dumps(metrics, indent=2))
+        f.write("\n```\n\n## Generated Artifacts\n")
+        for name in ["config.yaml", "metrics.json", "run_metadata.json", "trajectories/", "checkpoints/"]:
+            f.write(f"- `{name}`\n")
+        if notes:
+            f.write(f"\n## Notes\n{notes}\n")

@@ -1,7 +1,7 @@
-name: cifar10n
-num_classes: 10
+name: cifar100n
+num_classes: 100
 data_dir: ./data
-noisy_split: worse
+noisy_split: noisy100
 batch_size: 128
 num_workers: 2
 val_ratio: 0.1

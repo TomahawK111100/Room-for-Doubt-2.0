@@ -1,12 +1,17 @@
 defaults:
   - _self_
   - dataset: cifar10n
-  - model: resnet
-
-trainer:
-  max_epochs: 10
-  accelerator: auto
-  devices: 1
-  deterministic: true
+  - model: resnet18
+  - optimizer: adam
+  - trainer: default
 
 seed: 42
+run_id: ${now:%Y%m%d_%H%M%S}
+output_dir: outputs
+
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}
+  sweep:
+    dir: ${output_dir}/multirun
+    subdir: ${hydra.job.num}
