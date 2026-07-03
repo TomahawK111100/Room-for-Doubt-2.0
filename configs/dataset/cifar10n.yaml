@@ -1,4 +1,7 @@
-name: "cifar10n"
-data_dir: "./data"
+name: cifar10n
+num_classes: 10
+data_dir: ./data
+noisy_split: worse
 batch_size: 128
 num_workers: 2
+val_ratio: 0.1
