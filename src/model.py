@@ -90,7 +90,7 @@ class ResNetClassifier(pl.LightningModule):
         
         # Log per-sample trajectories
         # Detach from graph and move to CPU for logging
-        per_sample_loss = F.cross_entropy(logits, noisy_labels, reduction=\'none\').detach().cpu()
+        per_sample_loss = F.cross_entropy(logits, noisy_labels, reduction='none').detach().cpu()
         per_sample_probs = probs.detach().cpu()
         noisy_labels_cpu = noisy_labels.detach().cpu()
         clean_labels_cpu = clean_labels.detach().cpu()

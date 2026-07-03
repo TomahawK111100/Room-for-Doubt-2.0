@@ -3,6 +3,7 @@ import pytest
 import os
 import torch
 import numpy as np
+import json
 from omegaconf import OmegaConf
 
 from src.dataset import CIFARDataModule, CIFAR10N
@@ -13,12 +14,7 @@ from src.logging_utils import save_run_metadata, save_metrics, save_trajectory_b
 
 @pytest.fixture(scope="module")
 def cifar_data_module():
-    data_dir = "./data_test"
-    # Ensure clean state for each test run
-    if os.path.exists(data_dir):
-        import shutil
-        shutil.rmtree(data_dir)
-    
+    data_dir = "./data"
     dm = CIFARDataModule(data_dir=data_dir, batch_size=32, num_workers=0, val_ratio=0.1, seed=42)
     dm.prepare_data()
     dm.setup()
@@ -51,11 +47,7 @@ def test_dataset_splits(cifar_data_module):
     assert expected_test_ids == actual_test_ids
 
 def test_stable_sample_ids():
-    data_dir = "./data_test_stable_ids"
-    if os.path.exists(data_dir):
-        import shutil
-        shutil.rmtree(data_dir)
-
+    data_dir = "./data"
     dm1 = CIFARDataModule(data_dir=data_dir, batch_size=32, num_workers=0, val_ratio=0.1, seed=123)
     dm1.prepare_data()
     dm1.setup()
@@ -73,8 +65,6 @@ def test_stable_sample_ids():
 
     assert train_ids_1 == train_ids_2
     assert val_ids_1 == val_ids_2
-    import shutil
-    shutil.rmtree(data_dir)
 
 def test_dataloader_output_format(cifar_data_module):
     train_loader = cifar_data_module.train_dataloader()
@@ -153,7 +143,7 @@ def test_save_trajectory_batch(dummy_output_dir):
     save_trajectory_batch(dummy_output_dir, epoch=1, batch_data=batch_data)
     traj_dir = os.path.join(dummy_output_dir, "trajectories")
     assert os.path.exists(traj_dir)
-    assert any(f.startswith("epoch_1_batch_") and f.endswith(".parquet") for f in os.listdir(traj_dir))
+    assert any(f.startswith("epoch_1_batch_") and f.endswith(".csv") for f in os.listdir(traj_dir))
 
 def test_generate_report(dummy_output_dir):
     dummy_config = OmegaConf.create({"seed": 42, "dataset": {"name": "cifar10n"}})

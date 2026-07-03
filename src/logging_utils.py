@@ -48,8 +48,8 @@ def save_trajectory_batch(output_dir, epoch, batch_data):
     
     # Save each batch individually for now. Later, these can be aggregated.
     # Using a unique filename for each batch to avoid overwriting.
-    batch_filename = os.path.join(output_dir, "trajectories", f"epoch_{epoch}_batch_{datetime.now().strftime("%H%M%S%f")}.parquet")
-    batch_df.to_parquet(batch_filename, index=False)
+    batch_filename = os.path.join(output_dir, "trajectories", f"epoch_{epoch}_batch_{datetime.now().strftime("%H%M%S%f")}.csv")
+    batch_df.to_csv(batch_filename, index=False)
 
 def generate_report(output_dir, run_id, config, metrics, additional_notes=None):
     report_path = os.path.join(output_dir, "report.md")
