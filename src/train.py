@@ -8,7 +8,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
 from src.dataset import CIFARDataModule
 from src.logging_utils import TrajectoryLoggerCallback, generate_report, save_metrics, save_run_metadata
-from src.model import ResNetClassifier
+from src.model import ResNetClassifier, DescriptorDistillationModule
 
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
@@ -26,11 +26,21 @@ def main(cfg: DictConfig):
         seed=cfg.seed,
         num_classes=cfg.model.num_classes,
     )
-    model = ResNetClassifier(
-        num_classes=cfg.model.num_classes,
-        pretrained=cfg.model.pretrained,
-        learning_rate=cfg.optimizer.lr,
-    )
+    
+    if cfg.model.name == "descriptor_distillation":
+        model = DescriptorDistillationModule(
+            num_classes=cfg.model.num_classes,
+            pretrained_teacher=cfg.model.pretrained_teacher,
+            learning_rate=cfg.optimizer.lr,
+            distill_alpha=cfg.model.distill_alpha,
+            temperature=cfg.model.temperature
+        )
+    else:
+        model = ResNetClassifier(
+            num_classes=cfg.model.num_classes,
+            pretrained=cfg.model.pretrained,
+            learning_rate=cfg.optimizer.lr,
+        )
 
     ckpt_cb = ModelCheckpoint(
         dirpath=output_dir / "checkpoints",

@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - dataset: cifar10n
-  - model: resnet18
+  - model: resnet34
   - optimizer: adam
   - trainer: default
 
