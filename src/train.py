@@ -66,7 +66,7 @@ def main(cfg: DictConfig):
     OmegaConf.save(cfg, output_dir / "config.yaml")
     save_metrics(output_dir, metrics)
     meta = {
-        "best_epoch": ckpt_cb.best_epoch,
+        "best_model_path": ckpt_cb.best_model_path,
         "best_val_loss": float(ckpt_cb.best_model_score) if ckpt_cb.best_model_score else None,
         "seed": cfg.seed,
         "dataset_split": cfg.dataset.noisy_split,
