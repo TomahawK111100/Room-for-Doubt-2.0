@@ -27,4 +27,4 @@ __pycache__/
 # Виртуальные окружения
 venv/
 .venv/
-env/
+env/trajectories/
