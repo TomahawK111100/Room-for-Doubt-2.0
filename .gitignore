@@ -29,3 +29,5 @@ venv/
 .venv/
 env/trajectories/
 trajectories/
+checkpoints/
+lightning_logs/
