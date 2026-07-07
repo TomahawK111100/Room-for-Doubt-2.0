@@ -1,0 +1,5 @@
+name: descriptor_distillation
+num_classes: ${dataset.num_classes}
+pretrained_teacher: true
+distill_alpha: 0.5
+temperature: 2.0
