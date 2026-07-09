@@ -7,7 +7,7 @@ from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 
 from src.dataset import CIFARDataModule
-from src.logging_utils import TrajectoryLoggerCallback, generate_report, save_metrics, save_run_metadata
+from src.logging_utils import TrajectoryLoggerCallback, DataCartographyCallback, generate_report, save_metrics, save_run_metadata
 from src.model import ResNetClassifier, DescriptorDistillationModule
 
 
@@ -35,12 +35,14 @@ def main(cfg: DictConfig):
             distill_alpha=cfg.model.distill_alpha,
             temperature=cfg.model.temperature
         )
+        stage_name = "stage2"
     else:
         model = ResNetClassifier(
             num_classes=cfg.model.num_classes,
             pretrained=cfg.model.pretrained,
             learning_rate=cfg.optimizer.lr,
         )
+        stage_name = "stage1"
 
     ckpt_cb = ModelCheckpoint(
         dirpath=output_dir / "checkpoints",
@@ -54,7 +56,12 @@ def main(cfg: DictConfig):
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         deterministic=cfg.trainer.deterministic,
-        callbacks=[ckpt_cb, TrajectoryLoggerCallback(str(output_dir)), LearningRateMonitor()],
+        callbacks=[
+            ckpt_cb, 
+            TrajectoryLoggerCallback(str(output_dir)), 
+            DataCartographyCallback(str(output_dir), stage_name=stage_name),
+            LearningRateMonitor()
+        ],
         default_root_dir=str(output_dir),
     )
 
