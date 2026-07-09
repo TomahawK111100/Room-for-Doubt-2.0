@@ -86,7 +86,10 @@ class ResNetClassifier(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        # Add Cosine Annealing scheduler over max_epochs
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.trainer.max_epochs)
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
 
 class DescriptorDistillationModule(pl.LightningModule):
@@ -197,4 +200,6 @@ class DescriptorDistillationModule(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.student.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.Adam(self.student.parameters(), lr=self.learning_rate)
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.trainer.max_epochs)
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
