@@ -1,0 +1,33 @@
+Seed set to 42
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
+┏━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+┃   ┃ Name     ┃ Type                   ┃ Params ┃ Mode  ┃ FLOPs ┃
+┡━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+│ 0 │ backbone │ ResNetFeatureExtractor │ 21.3 M │ train │     0 │
+└───┴──────────┴────────────────────────┴────────┴───────┴───────┘
+Trainable params: 21.3 M                                                        
+Non-trainable params: 0                                                         
+Total params: 21.3 M                                                            
+Total estimated model params size (MB): 85.128                                  
+Modules in train mode: 118                                                      
+Modules in eval mode: 0                                                         
+Total FLOPs: 0                                                                  
+/usr/local/lib/python3.12/dist-packages/pytorch_lightning/utilities/_pytree.py:21: `isinstance(treespec, LeafSpec)` is deprecated, use `isinstance(treespec, TreeSpec) and treespec.is_leaf()` instead.
+`Trainer.fit` stopped: `max_epochs=100` reached.
+Epoch 99/99 ━━━━━━━━━━━━━━━━ 351/351 0:01:10 •        4.97it/s v_num: 0.000     
+                                     0:00:00                   val_loss: 6.643  
+                                                               val_acc: 0.465   
+                                                               train_loss: 0.026
+Restoring states from the checkpoint path at /kaggle/working/Room-for-Doubt-2.0/checkpoints/best.ckpt
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0,1]
+Loaded model weights from the checkpoint at /kaggle/working/Room-for-Doubt-2.0/checkpoints/best.ckpt
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        Test metric        ┃       DataLoader 0        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│         test_acc          │    0.7775999903678894     │
+│         test_loss         │    0.8134528994560242     │
+└───────────────────────────┴───────────────────────────┘
+Testing ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 79/79 0:00:04 • 0:00:00 19.17it/s 
