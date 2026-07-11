@@ -51,26 +51,28 @@ class ResNetClassifier(pl.LightningModule):
         # Uncertainty metric: predictive entropy
         predictive_entropy = -torch.sum(probs * torch.log(probs + 1e-8), dim=1)
         
+        # Prediction Margin: P(y_top1) - P(y_top2)
+        top2_probs, _ = torch.topk(probs, 2, dim=1)
+        prediction_margin = top2_probs[:, 0] - top2_probs[:, 1]
+        
         trajectory = {
             "per_sample_loss": F.cross_entropy(logits, noisy_labels, reduction="none").detach(),
             "per_sample_probs": probs.detach(),
             "predictive_entropy": predictive_entropy.detach(),
+            "prediction_margin": prediction_margin.detach(),
             "noisy_labels": noisy_labels.detach(),
             "clean_labels": clean_labels.detach(),
             "sample_ids": sample_ids.detach(),
         }
         
-        # Логируем только для валидации/теста здесь, чтобы избежать дублирования во время train
-        if split != "train":
-            self.log(f"{split}_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-            self.log(f"{split}_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        # Logging
+        self.log(f"{split}_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{split}_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
             
         return {"loss": loss, "trajectory": trajectory}
 
     def training_step(self, batch, batch_idx):
         out = self._step(batch, "train")
-        # Единственная точка логирования train_loss
-        self.log("train_loss", out["loss"], on_step=False, on_epoch=True, prog_bar=True)
         return out
 
     def validation_step(self, batch, batch_idx):
@@ -172,9 +174,8 @@ class DescriptorDistillationModule(pl.LightningModule):
         }
         
         # Logging
-        if split != "train":
-            self.log(f"{split}_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-            self.log(f"{split}_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{split}_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{split}_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
             
         self.log(f"{split}_loss_cls", loss_cls, on_step=False, on_epoch=True)
         self.log(f"{split}_loss_desc", loss_desc, on_step=False, on_epoch=True)
@@ -183,8 +184,6 @@ class DescriptorDistillationModule(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         out = self._step(batch, "train")
-        # Единственная точка логирования train_loss для дистилляции
-        self.log("train_loss", out["loss"], on_step=False, on_epoch=True, prog_bar=True)
         return out
 
     def validation_step(self, batch, batch_idx):
