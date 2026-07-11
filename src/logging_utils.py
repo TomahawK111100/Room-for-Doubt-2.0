@@ -89,6 +89,9 @@ def validate_trajectory_schema(df: pd.DataFrame) -> None:
         raise ValueError(f"Missing trajectory columns: {missing}")
 
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 class DataCartographyCallback(pl.Callback):
     def __init__(self, output_dir: str, stage_name: str = "stage1"):
         self.output_dir = output_dir
@@ -96,13 +99,33 @@ class DataCartographyCallback(pl.Callback):
         self.history = defaultdict(lambda: {
             "predictions": [],
             "margins": [],
-            "descriptor_distances": [],
             "epochs": [],
             "true_label": None,
             "noisy_label": None
         })
+        self.epoch_metrics = defaultdict(list)
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        if self.stage_name == "stage1" and not trainer.sanity_checking:
+            metrics = trainer.callback_metrics
+            if "train_loss" in metrics:
+                self.epoch_metrics["train_loss"].append(metrics["train_loss"].item())
+            if "train_acc" in metrics:
+                self.epoch_metrics["train_acc"].append(metrics["train_acc"].item())
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        if self.stage_name == "stage1" and not trainer.sanity_checking:
+            metrics = trainer.callback_metrics
+            if "val_loss" in metrics:
+                self.epoch_metrics["val_loss"].append(metrics["val_loss"].item())
+            if "val_acc" in metrics:
+                self.epoch_metrics["val_acc"].append(metrics["val_acc"].item())
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0):
+        if self.stage_name != "stage1":
+            return
+        if trainer.sanity_checking:
+            return
         if not isinstance(outputs, dict) or "trajectory" not in outputs:
             return
             
@@ -112,10 +135,7 @@ class DataCartographyCallback(pl.Callback):
         preds = np.argmax(probs, axis=1)
         
         has_pm = "prediction_margin" in t
-        has_dd = "descriptor_distance" in t
-        
         if has_pm: pm = t["prediction_margin"].cpu().numpy()
-        if has_dd: dd = t["descriptor_distance"].cpu().numpy()
         
         clean_labels = t["clean_labels"].cpu().numpy()
         noisy_labels = t["noisy_labels"].cpu().numpy()
@@ -133,24 +153,111 @@ class DataCartographyCallback(pl.Callback):
                 
             if has_pm:
                 self.history[sid_int]["margins"].append(float(pm[i]))
-            if has_dd:
-                self.history[sid_int]["descriptor_distances"].append(float(dd[i]))
+
+    @torch.no_grad()
+    def _run_stage2_inference(self, trainer, pl_module):
+        pl_module.eval()
+        device = pl_module.device
+        dataloader = trainer.datamodule.train_dataloader()
+        
+        distances = {}
+        for batch in dataloader:
+            # batch is (imgs, noisy_labels, clean_labels, sample_ids)
+            imgs = batch[0].to(device)
+            sample_ids = batch[3].cpu().numpy()
+            
+            _, student_features = pl_module.student(imgs)
+            _, teacher_features = pl_module.teacher(imgs)
+            
+            dd = torch.norm(student_features - teacher_features, p=2, dim=1).cpu().numpy()
+            
+            for i, sid in enumerate(sample_ids):
+                distances[str(int(sid))] = float(dd[i])
+                
+        return distances
+
+    def _plot_stage1_metrics(self, plots_dir: Path):
+        epochs = range(1, len(self.epoch_metrics.get("train_loss", [])) + 1)
+        
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        if "train_loss" in self.epoch_metrics and "val_loss" in self.epoch_metrics:
+            ax1.plot(epochs, self.epoch_metrics["train_loss"], label="Train Loss")
+            ax1.plot(epochs, self.epoch_metrics["val_loss"], label="Val Loss")
+        ax1.set_title("Loss over Epochs")
+        ax1.set_xlabel("Epoch")
+        ax1.set_ylabel("Loss")
+        ax1.legend()
+        
+        if "train_acc" in self.epoch_metrics and "val_acc" in self.epoch_metrics:
+            ax2.plot(epochs, self.epoch_metrics["train_acc"], label="Train Acc")
+            ax2.plot(epochs, self.epoch_metrics["val_acc"], label="Val Acc")
+        ax2.set_title("Accuracy over Epochs")
+        ax2.set_xlabel("Epoch")
+        ax2.set_ylabel("Accuracy")
+        ax2.legend()
+        
+        plt.tight_layout()
+        plt.savefig(plots_dir / "stage1_loss_acc.png", dpi=300)
+        plt.close()
+
+    def _plot_stage1_scatter(self, plots_dir: Path, results: dict):
+        flips = []
+        mean_margins = []
+        for sid, data in results.items():
+            flips.append(data.get("flips", 0))
+            margins = data.get("margins", [])
+            mean_margins.append(np.mean(margins) if margins else 0.0)
+            
+        plt.figure(figsize=(8, 6))
+        sns.scatterplot(x=flips, y=mean_margins, alpha=0.6, edgecolor=None)
+        plt.title("Data Cartography (Stage 1)")
+        plt.xlabel("Variability (Flips)")
+        plt.ylabel("Confidence (Mean Predictive Margin)")
+        plt.tight_layout()
+        plt.savefig(plots_dir / "stage1_cartography_scatter.png", dpi=300)
+        plt.close()
+
+    def _plot_stage2_histogram(self, plots_dir: Path, distances: dict):
+        vals = list(distances.values())
+        plt.figure(figsize=(8, 6))
+        sns.histplot(vals, bins=50, kde=True)
+        plt.title("Descriptor Distance Distribution (Stage 2)")
+        plt.xlabel("L2 Distance (Student vs Teacher)")
+        plt.ylabel("Count")
+        plt.tight_layout()
+        plt.savefig(plots_dir / "stage2_distance_distribution.png", dpi=300)
+        plt.close()
 
     def on_fit_end(self, trainer, pl_module):
-        # Calculate flips and save
-        results = {}
-        for sid, data in self.history.items():
-            preds = data["predictions"]
-            flips = 0
-            for i in range(1, len(preds)):
-                if preds[i] != preds[i-1]:
-                    flips += 1
-            data["flips"] = flips
-            results[str(sid)] = dict(data)
+        plots_dir = Path(self.output_dir) / "plots"
+        plots_dir.mkdir(parents=True, exist_ok=True)
+        
+        if self.stage_name == "stage1":
+            results = {}
+            for sid, data in self.history.items():
+                preds = data["predictions"]
+                flips = 0
+                for i in range(1, len(preds)):
+                    if preds[i] != preds[i-1]:
+                        flips += 1
+                data["flips"] = flips
+                results[str(sid)] = dict(data)
+                
+            out_path = Path(self.output_dir) / "stage1_trajectories.json"
+            with open(out_path, "w") as f:
+                json.dump(results, f, indent=2)
+                
+            self._plot_stage1_metrics(plots_dir)
+            self._plot_stage1_scatter(plots_dir, results)
             
-        out_path = Path(self.output_dir) / f"{self.stage_name}_trajectories.json"
-        with open(out_path, "w") as f:
-            json.dump(results, f, indent=2)
+        elif self.stage_name == "stage2":
+            distances = self._run_stage2_inference(trainer, pl_module)
+            
+            out_path = Path(self.output_dir) / "stage2_final_distances.json"
+            with open(out_path, "w") as f:
+                json.dump(distances, f, indent=2)
+                
+            self._plot_stage2_histogram(plots_dir, distances)
 
 class TrajectoryLoggerCallback(pl.Callback):
     def __init__(self, output_dir: str):
