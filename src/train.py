@@ -16,12 +16,13 @@ def main(cfg: DictConfig):
     pl.seed_everything(cfg.seed)
     output_dir = Path(os.getcwd())
 
+    num_workers = os.cpu_count() or 4
     dm = CIFARDataModule(
         data_dir=cfg.dataset.data_dir,
         dataset_name=cfg.dataset.name,
         noisy_split=cfg.dataset.noisy_split,
         batch_size=cfg.dataset.batch_size,
-        num_workers=cfg.dataset.num_workers,
+        num_workers=num_workers,
         val_ratio=cfg.dataset.val_ratio,
         seed=cfg.seed,
         num_classes=cfg.model.num_classes,
@@ -56,6 +57,7 @@ def main(cfg: DictConfig):
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         deterministic=cfg.trainer.deterministic,
+        precision=cfg.trainer.get("precision", "32-true"),
         callbacks=[
             ckpt_cb, 
             TrajectoryLoggerCallback(str(output_dir)), 
