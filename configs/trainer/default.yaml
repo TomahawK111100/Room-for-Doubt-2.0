@@ -2,3 +2,4 @@ max_epochs: 100
 accelerator: auto
 devices: 1
 deterministic: true
+precision: 16-mixed

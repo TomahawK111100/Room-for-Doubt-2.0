@@ -202,19 +202,47 @@ class DataCartographyCallback(pl.Callback):
 
     def _plot_stage1_scatter(self, plots_dir: Path, results: dict):
         flips = []
-        mean_margins = []
+        aum = []
         for sid, data in results.items():
             flips.append(data.get("flips", 0))
-            margins = data.get("margins", [])
-            mean_margins.append(np.mean(margins) if margins else 0.0)
+            aum.append(data.get("aum", 0.0))
             
         plt.figure(figsize=(8, 6))
-        sns.scatterplot(x=flips, y=mean_margins, alpha=0.6, edgecolor=None)
+        # Draw demarcation lines conceptually
+        # Variability is typically divided into Low and High, Confidence (AUM) is Low/High
+        
+        ax = sns.scatterplot(x=flips, y=aum, alpha=0.6, edgecolor=None)
+        
+        # Calculate quantiles for demarcation
+        if flips and aum:
+            flip_q = np.percentile(flips, 50)
+            aum_q = np.percentile(aum, 50)
+            
+            ax.axvline(flip_q, color='gray', linestyle='--', alpha=0.5)
+            ax.axhline(aum_q, color='gray', linestyle='--', alpha=0.5)
+            
+            # Text annotations
+            ax.text(np.min(flips), np.max(aum), "Easy", fontsize=12, color='green', verticalalignment='top')
+            ax.text(np.max(flips), np.max(aum), "Ambiguous", fontsize=12, color='orange', horizontalalignment='right', verticalalignment='top')
+            ax.text(np.min(flips), np.min(aum), "Hard", fontsize=12, color='red', verticalalignment='bottom')
+
         plt.title("Data Cartography (Stage 1)")
         plt.xlabel("Variability (Flips)")
-        plt.ylabel("Confidence (Mean Predictive Margin)")
+        plt.ylabel("Confidence (AUM)")
         plt.tight_layout()
         plt.savefig(plots_dir / "stage1_cartography_scatter.png", dpi=300)
+        plt.close()
+
+    def _plot_stage1_aum_hist(self, plots_dir: Path, results: dict):
+        aum = [data.get("aum", 0.0) for data in results.values()]
+        
+        plt.figure(figsize=(8, 6))
+        sns.histplot(aum, bins=50, kde=True)
+        plt.title("AUM Distribution (Stage 1)")
+        plt.xlabel("Area Under the Margin (AUM)")
+        plt.ylabel("Count")
+        plt.tight_layout()
+        plt.savefig(plots_dir / "stage1_aum_distribution.png", dpi=300)
         plt.close()
 
     def _plot_stage2_histogram(self, plots_dir: Path, distances: dict):
@@ -241,6 +269,12 @@ class DataCartographyCallback(pl.Callback):
                     if preds[i] != preds[i-1]:
                         flips += 1
                 data["flips"] = flips
+                
+                # Calculate AUM (mean margin over epochs)
+                margins = data.get("margins", [])
+                aum = float(np.mean(margins)) if margins else 0.0
+                data["aum"] = aum
+                
                 results[str(sid)] = dict(data)
                 
             out_path = Path(self.output_dir) / "stage1_trajectories.json"
@@ -249,6 +283,7 @@ class DataCartographyCallback(pl.Callback):
                 
             self._plot_stage1_metrics(plots_dir)
             self._plot_stage1_scatter(plots_dir, results)
+            self._plot_stage1_aum_hist(plots_dir, results)
             
         elif self.stage_name == "stage2":
             distances = self._run_stage2_inference(trainer, pl_module)
