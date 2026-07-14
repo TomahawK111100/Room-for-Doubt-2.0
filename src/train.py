@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import torch
 import hydra
 import pytorch_lightning as pl
 from omegaconf import DictConfig, OmegaConf
@@ -13,6 +14,7 @@ from src.model import ResNetClassifier, DescriptorDistillationModule
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
 def main(cfg: DictConfig):
+    torch.set_float32_matmul_precision('medium')
     pl.seed_everything(cfg.seed)
     output_dir = Path(os.getcwd())
 
@@ -52,12 +54,16 @@ def main(cfg: DictConfig):
         mode="min",
         save_top_k=1,
     )
+    
+    # Скомпилируем модель для ускорения
+    model = torch.compile(model)
+    
     trainer = pl.Trainer(
         max_epochs=cfg.trainer.max_epochs,
         accelerator=cfg.trainer.accelerator,
         devices=cfg.trainer.devices,
         deterministic=cfg.trainer.deterministic,
-        precision=cfg.trainer.get("precision", "32-true"),
+        precision="16-mixed" if torch.cuda.is_available() else "32-true",
         callbacks=[
             ckpt_cb, 
             TrajectoryLoggerCallback(str(output_dir)), 

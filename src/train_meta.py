@@ -96,6 +96,7 @@ class MetaRegressor(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
 def main():
+    torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
     
     # ВОТ НАШ МАЯЧОК ОТЛАДКИ
@@ -130,10 +131,12 @@ def main():
     val_set = ValSubsetWrapper(val_subset, transform_val)
     
     num_workers = os.cpu_count() or 4
-    train_loader = DataLoader(train_subset, batch_size=128, shuffle=True, num_workers=num_workers, pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=True)
+    persistent_workers = num_workers > 0
+    train_loader = DataLoader(train_subset, batch_size=128, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=persistent_workers)
+    val_loader = DataLoader(val_set, batch_size=128, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=persistent_workers)
 
     model = MetaRegressor(lr=1e-4)
+    model = torch.compile(model)
 
     trainer = pl.Trainer(
         max_epochs=15,

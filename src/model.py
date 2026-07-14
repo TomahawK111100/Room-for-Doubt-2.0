@@ -51,9 +51,12 @@ class ResNetClassifier(pl.LightningModule):
         # Uncertainty metric: predictive entropy
         predictive_entropy = -torch.sum(probs * torch.log(probs + 1e-8), dim=1)
         
-        # Prediction Margin: P(y_top1) - P(y_top2)
-        top2_probs, _ = torch.topk(probs, 2, dim=1)
-        prediction_margin = top2_probs[:, 0] - top2_probs[:, 1]
+        # Prediction Margin for Cartography: P(noisy_label) - max_{j != noisy_label} P(j)
+        probs_true = probs[torch.arange(probs.size(0)), noisy_labels]
+        probs_clone = probs.clone()
+        probs_clone[torch.arange(probs.size(0)), noisy_labels] = -1.0
+        probs_max_other, _ = torch.max(probs_clone, dim=1)
+        prediction_margin = probs_true - probs_max_other
         
         trajectory = {
             "per_sample_loss": F.cross_entropy(logits, noisy_labels, reduction="none").detach(),
@@ -155,9 +158,12 @@ class DescriptorDistillationModule(pl.LightningModule):
         # 1. Predictive Entropy: H(Y|X) = -sum(P(Y|X) * log(P(Y|X)))
         predictive_entropy = -torch.sum(probs * torch.log(probs + 1e-8), dim=1)
         
-        # 2. Prediction Margin: P(y_top1) - P(y_top2)
-        top2_probs, _ = torch.topk(probs, 2, dim=1)
-        prediction_margin = top2_probs[:, 0] - top2_probs[:, 1]
+        # 2. Prediction Margin for Cartography: P(noisy_label) - max_{j != noisy_label} P(j)
+        probs_true = probs[torch.arange(probs.size(0)), noisy_labels]
+        probs_clone = probs.clone()
+        probs_clone[torch.arange(probs.size(0)), noisy_labels] = -1.0
+        probs_max_other, _ = torch.max(probs_clone, dim=1)
+        prediction_margin = probs_true - probs_max_other
         
         # 3. Descriptor Divergence: L2 distance per sample between student and teacher
         descriptor_distance = torch.norm(student_features - teacher_features, p=2, dim=1)

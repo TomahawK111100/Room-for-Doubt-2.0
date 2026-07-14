@@ -121,10 +121,8 @@ class DataCartographyCallback(pl.Callback):
             if "val_acc" in metrics:
                 self.epoch_metrics["val_acc"].append(metrics["val_acc"].item())
 
-    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0):
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
         if self.stage_name != "stage1":
-            return
-        if trainer.sanity_checking:
             return
         if not isinstance(outputs, dict) or "trajectory" not in outputs:
             return
