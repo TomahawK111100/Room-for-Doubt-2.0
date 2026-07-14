@@ -1,4 +1,4 @@
-# Experimental Results: Room for Doubt (ICOMP-2026)
+# Experimental Results: Room for Doubt 
 
 **Project:** Distilling training dynamics for inference-time uncertainty estimation  
 **Dataset:** CIFAR-10N (Worse labels - extreme asymmetric noise)  
@@ -32,5 +32,4 @@ We evaluate how well the Meta-Regressor (ResNet-18) captures the historical trai
 - **Selective Inference Curve:** `plots/selective_inference_curve.png`
 - **Data Cartography Map:** `plots/stage1_cartography_scatter_zones.png`
 
----
-*Generated on: 2024-07-14 | Week 4 Milestone*
+
