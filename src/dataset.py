@@ -79,8 +79,8 @@ class NoisyCIFARDataset(Dataset):
     ):
         train = dataset_name == "cifar10n"
         cifar_cls = datasets.CIFAR10 if train else datasets.CIFAR100
-        # download=False, чтобы не лезть в упавший интернет
-        base = cifar_cls(root=data_dir, train=True, download=False, transform=None)
+        # download=True, чтобы не лезть в упавший интернет
+        base = cifar_cls(root=data_dir, train=True, download=True, transform=None)
         noisy_all, clean_all = load_noisy_labels(data_dir, dataset_name, noisy_split)
 
         self.data = base.data[indices]
@@ -104,7 +104,7 @@ class CleanCIFARTest(Dataset):
     def __init__(self, data_dir: str, dataset_name: str, transform=None):
         train = dataset_name == "cifar10n"
         cifar_cls = datasets.CIFAR10 if train else datasets.CIFAR100
-        self.base = cifar_cls(root=data_dir, train=False, download=False, transform=transform)
+        self.base = cifar_cls(root=data_dir, train=False, download=True, transform=transform)
 
     def __len__(self) -> int:
         return len(self.base)
@@ -152,9 +152,9 @@ class CIFARDataModule(pl.LightningDataModule):
     def prepare_data(self) -> None:
         train = self.dataset_name == "cifar10n"
         cifar_cls = datasets.CIFAR10 if train else datasets.CIFAR100
-        # Отключаем принудительное скачивание (download=False)
-        cifar_cls(self.data_dir, train=True, download=False)
-        cifar_cls(self.data_dir, train=False, download=False)
+        # Отключаем принудительное скачивание (download=True)
+        cifar_cls(self.data_dir, train=True, download=True)
+        cifar_cls(self.data_dir, train=False, download=True)
         load_noisy_labels(self.data_dir, self.dataset_name, self.noisy_split)
 
     def setup(self, stage: Optional[str] = None) -> None:
