@@ -43,12 +43,21 @@ def _load_student(checkpoint_path: str, num_classes: int = 10) -> ResNetClassifi
     )
 
 
-def _load_meta_model(weights_path: str) -> MetaRegressor:
-    model = MetaRegressor(lr=1e-4)
-    state_dict = torch.load(weights_path, map_location="cpu")
-    if isinstance(state_dict, dict) and "state_dict" in state_dict:
-        state_dict = state_dict["state_dict"]
-    model.load_state_dict(state_dict, strict=True)
+def _load_meta_model(ckpt_path):
+    from train_meta import MetaRegressor
+    model = MetaRegressor()
+    
+    # Загружаем веса
+    state_dict = torch.load(ckpt_path, map_location="cpu")
+    
+    # ХАК: Если модель была скомпилирована (torch.compile), 
+    # удаляем префикс '_orig_mod.' из ключей
+    new_state_dict = {}
+    for k, v in state_dict.items():
+        name = k.replace("_orig_mod.", "") 
+        new_state_dict[name] = v
+        
+    model.load_state_dict(new_state_dict, strict=True)
     model.eval()
     return model
 
