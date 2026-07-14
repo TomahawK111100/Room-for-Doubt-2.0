@@ -1,33 +1,36 @@
-# ICOMP-2026: Experimental Results Template
+# Experimental Results: Room for Doubt (ICOMP-2026)
 
-**Project:** Robust Feature Distillation under Extreme Asymmetric Noise (Data Cartography Approach)  
-**Dataset:** CIFAR-10N / CIFAR-100N
+**Project:** Distilling training dynamics for inference-time uncertainty estimation  
+**Dataset:** CIFAR-10N (Worse labels - extreme asymmetric noise)  
+**Status:** Week 4 Complete (Deterministic Baseline Established)
 
-## Main Classification Results
+## 1. Main Results: Selective Inference Performance
+The primary goal is to improve model reliability by rejecting samples with high predicted uncertainty (Training Dynamics Distillation).
 
-Evaluation of the model's robustness against severe label corruption (`cifar10n=worse` configuration).
+| Rejection Rate (%) | Kept Samples | **Test Accuracy (%)** | Accuracy Gain |
+|:-------------------|:-------------|:----------------------|:--------------|
+| 0% (Baseline)      | 10000        | **74.06%**            | +0.00%        |
+| 10%                | 9000         | 75.60%                | +1.54%        |
+| 20%                | 8000         | 77.08%                | +3.02%        |
+| 30%                | 7000         | 78.61%                | +4.55%        |
+| 40%                | 6000         | 80.27%                | +6.21%        |
+| 50%                | 5000         | **81.66%**            | **+7.60%**    |
 
-| Scenario (Noise Type) | Method / Architecture | Test Accuracy (%) | Epochs to Converge | Inference Time (ms) |
-| :--- | :--- | :---: | :---: | :---: |
-| **CIFAR-10N (Worse)** | *Baseline (Standard ResNet-34)* | - | 100 | - |
-| | *DivideMix (Li et al.)* | - | - | - |
-| | *SOP (Liu et al.)* | - | - | - |
-| | **Our Method (Stage 1: Cartography / Teacher)** | [Wait for evaluation] | 100 | - |
-| | **Our Method (Stage 2: Distillation / Student)** | [Wait for evaluation] | - | - |
-| **CIFAR-100N (Noisy)** | *Baseline (Standard ResNet-34)* | - | 100 | - |
-| | **Our Method (Full Pipeline)** | - | - | - |
+**Key Insight:** Our distilled meta-regressor effectively identifies "Hard" and "Noisy" samples. Rejecting the top 30% of uncertain samples yields a significant +4.55% boost in accuracy.
 
-## Ablation Study (Data Cartography Metrics)
+## 2. Uncertainty Estimation Quality (Distillation Analysis)
+We evaluate how well the Meta-Regressor (ResNet-18) captures the historical training dynamics (Flips) of the Teacher model (ResNet-34).
 
-Analysis of the sample distribution mapped during Stage 1 and the effectiveness of Stage 2 feature distillation.
+| Metric | Value | Interpretation |
+|:-------|:------|:---------------|
+| **Spearman Rank Correlation** | **0.289** | Statistically significant link between visual features and learning instability. |
+| **Data Cartography (Hard/Noise)** | 50.0% | High concentration of noise in CIFAR-10N Worse split. |
+| **Data Cartography (Ambiguous)** | 10.7% | Samples at the decision boundary, successfully targeted by our method. |
 
-| Component | Value | Interpretation |
-| :--- | :---: | :--- |
-| **Distilled Samples** | **44,928** | Samples selected for teacher-to-student feature transfer |
-| **Mean Feature Distance** | **9.366** | Average teacher–student embedding distance after distillation |
-| **Median Feature Distance** | **9.074** | Typical feature alignment between teacher and student |
-| **Minimum Distance** | **4.829** | Best-aligned feature representation |
-| **Maximum Distance** | **27.687** | Hardest samples remaining after distillation |
+## 3. Visual Artifacts
+- **Training Dynamics Scatter:** `plots/week3_correlation_scatter.png`
+- **Selective Inference Curve:** `plots/selective_inference_curve.png`
+- **Data Cartography Map:** `plots/stage1_cartography_scatter_zones.png`
 
 ---
-*Stage 2 successfully completed feature distillation on 44,928 selected samples. The obtained embedding distances indicate that the student network effectively learned the teacher's feature representations, while the largest distances correspond to difficult or ambiguous samples identified during Data Cartography. Final classification accuracy and comparison with competing methods will be reported after the evaluation stage.*
+*Generated on: 2024-07-14 | Week 4 Milestone*
