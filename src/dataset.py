@@ -176,9 +176,11 @@ class CIFARDataModule(pl.LightningDataModule):
     def _loader(self, ds, shuffle: bool) -> DataLoader:
         # Универсальная проверка для включения pin_memory как на CUDA, так и на MPS
         use_pin_memory = torch.cuda.is_available() or torch.backends.mps.is_available()
+        persistent_workers = self.num_workers > 0
         return DataLoader(
             ds, batch_size=self.batch_size, shuffle=shuffle,
             num_workers=self.num_workers, pin_memory=use_pin_memory,
+            persistent_workers=persistent_workers,
             drop_last=shuffle,
         )
 
