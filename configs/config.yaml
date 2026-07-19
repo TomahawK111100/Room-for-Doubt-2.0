@@ -15,3 +15,7 @@ hydra:
   sweep:
     dir: ${output_dir}/multirun
     subdir: ${hydra.job.num}
+dataset:
+  batch_size: 1024  # Было 128/256
+optimizer:
+  lr: 0.003         # Было 0.001
