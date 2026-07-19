@@ -31,3 +31,5 @@ env/trajectories/
 trajectories/
 checkpoints/
 lightning_logs/
+stage1_trajectories.json
+stage1_trajectories.zip
