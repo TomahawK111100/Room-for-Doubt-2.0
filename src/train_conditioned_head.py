@@ -1,3 +1,4 @@
+import argparse
 import os
 import json
 import torch
@@ -8,12 +9,28 @@ import torchvision
 import torchvision.transforms as transforms
 from torchvision.models import resnet18, ResNet18_Weights
 
+from src.utils import set_seed
+
+
 class CondTrajDataset(Dataset):
-    def __init__(self, root_dir='./data', traj_file='results/stage1_trajectories.json', transform=None):
+    def __init__(
+        self,
+        dataset_name: str = "cifar10",
+        root_dir: str = "./data",
+        traj_file: str = "results/stage1_trajectories.json",
+        transform=None,
+    ):
         """
-        Dataset that loads CIFAR-10 images alongside their trajectory margins and noisy labels.
+        Dataset that loads CIFAR images alongside their trajectory margins and noisy labels.
         """
-        self.cifar = torchvision.datasets.CIFAR10(root=root_dir, train=True, download=True, transform=transform)
+        if dataset_name == "cifar10":
+            dataset_cls = torchvision.datasets.CIFAR10
+        elif dataset_name == "cifar100":
+            dataset_cls = torchvision.datasets.CIFAR100
+        else:
+            raise ValueError(f"Unsupported dataset: {dataset_name}")
+
+        self.cifar = dataset_cls(root=root_dir, train=True, download=True, transform=transform)
         with open(traj_file, 'r') as f:
             self.trajectories = json.load(f)
             
@@ -41,7 +58,7 @@ class CondTrajDataset(Dataset):
         return image, torch.tensor(noisy_label, dtype=torch.long), torch.tensor(margins, dtype=torch.float32)
 
 class ConditionedPredictor(nn.Module):
-    def __init__(self):
+    def __init__(self, num_classes: int = 10):
         super().__init__()
         # Frozen resnet18 without the final fc layer
         resnet = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
@@ -52,7 +69,7 @@ class ConditionedPredictor(nn.Module):
             param.requires_grad = False
             
         # Embedding for the class label
-        self.class_emb = nn.Embedding(10, 32)
+        self.class_emb = nn.Embedding(num_classes, 32)
         
         # MLP for prediction
         self.mlp = nn.Sequential(
@@ -75,6 +92,15 @@ class ConditionedPredictor(nn.Module):
         return out
 
 def main():
+    parser = argparse.ArgumentParser(description="Train conditioned trajectory predictor.")
+    parser.add_argument("--dataset", type=str, default="cifar10", choices=["cifar10", "cifar100"])
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
+
+    set_seed(args.seed)
+
+    num_classes = 10 if args.dataset == "cifar10" else 100
+
     # Setup device
     device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -88,14 +114,19 @@ def main():
     ])
     
     # Load dataset
-    full_dataset = CondTrajDataset(transform=transform)
+    trajectory_path = f"results/stage1_trajectories_{args.dataset}_seed{args.seed}.json"
+    if not os.path.exists(trajectory_path):
+        raise FileNotFoundError(
+            f"Trajectory file '{trajectory_path}' not found. Run stage 1 for this dataset and seed first."
+        )
+    full_dataset = CondTrajDataset(dataset_name=args.dataset, traj_file=trajectory_path, transform=transform)
     
     # Use indices 0-45000 for training
     train_dataset = Subset(full_dataset, range(45000))
     train_loader = DataLoader(train_dataset, batch_size=128, shuffle=True, num_workers=2)
     
     # Initialize model, optimizer, and loss function
-    model = ConditionedPredictor().to(device)
+    model = ConditionedPredictor(num_classes=num_classes).to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()
     
@@ -126,7 +157,7 @@ def main():
         
     # Save the model
     os.makedirs('checkpoints', exist_ok=True)
-    save_path = 'checkpoints/cond_head.pth'
+    save_path = f"checkpoints/cond_head_{args.dataset}_seed{args.seed}.pth"
     torch.save(model.state_dict(), save_path)
     print(f"Model saved successfully to {save_path}")
 
