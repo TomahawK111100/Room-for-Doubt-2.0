@@ -80,63 +80,68 @@ def collect_shared_artifacts():
     for directory in ("results", "plots", "checkpoints"):
         copy_directory(directory, artifact_root / "_shared" / directory)
 
-def main():
+def run_setup(setup, seed_values):
+    dataset_name = setup["dataset_name"]
+    noisy_split = setup["noisy_split"]
+    dataset = dataset_name.removesuffix("n")
+    setup_id = f"{dataset_name}_{noisy_split}"
+    for seed in seed_values:
+        print(f"\n{'='*40}")
+        print(f"   STARTING SETUP: {setup_id.upper()} | SEED: {seed}")
+        print(f"{'='*40}")
+
+        run_dir = f"outputs/{setup_id}_seed{seed}"
+
+        run_stage([
+            "python", "src/train.py",
+            f"dataset={dataset_name}",
+            f"dataset.noisy_split={noisy_split}",
+            f"seed={seed}",
+            f"hydra.run.dir={run_dir}"
+        ])
+
+        traj_source = f"{run_dir}/stage1_trajectories.json"
+        if os.path.exists(traj_source):
+            target_path = f"results/stage1_trajectories_{setup_id}_seed{seed}.json"
+            shutil.copy(traj_source, target_path)
+        else:
+            print(f"!!! WARNING: Trajectory file not found at {traj_source}")
+
+        ckpt_source = f"{run_dir}/checkpoints/best.ckpt"
+        if os.path.exists(ckpt_source):
+            target_ckpt = f"checkpoints/best_{setup_id}_seed{seed}.ckpt"
+            shutil.copy(ckpt_source, target_ckpt)
+        else:
+            print(f"!!! WARNING: Checkpoint file not found at {ckpt_source}")
+
+        run_stage([
+            "python", "src/train_conditioned_head.py",
+            "--dataset", dataset, "--split", noisy_split, "--seed", str(seed),
+        ])
+        run_stage([
+            "python", "src/evaluate_top2_correction.py",
+            "--dataset", dataset, "--split", noisy_split, "--seed", str(seed),
+        ])
+        collect_run_artifacts(dataset_name, noisy_split, seed, run_dir)
+
+
+def run_setups(setups_to_run, seed_values=None):
+    seed_values = seeds if seed_values is None else seed_values
     os.makedirs("results", exist_ok=True)
     os.makedirs("checkpoints", exist_ok=True)
     artifact_root.mkdir(parents=True, exist_ok=True)
 
-    for setup in setups:
-        dataset_name = setup["dataset_name"]
-        noisy_split = setup["noisy_split"]
-        dataset = dataset_name.removesuffix("n")
-        setup_id = f"{dataset_name}_{noisy_split}"
-        for seed in seeds:
-            print(f"\n{'='*40}")
-            print(f"   STARTING SETUP: {setup_id.upper()} | SEED: {seed}")
-            print(f"{'='*40}")
-
-            run_dir = f"outputs/{setup_id}_seed{seed}"
-
-            run_stage([
-                "python", "src/train.py",
-                f"dataset={dataset_name}",
-                f"dataset.noisy_split={noisy_split}",
-                f"seed={seed}",
-                f"hydra.run.dir={run_dir}"
-            ])
-            
-            traj_source = f"{run_dir}/stage1_trajectories.json"
-            if os.path.exists(traj_source):
-                target_path = f"results/stage1_trajectories_{setup_id}_seed{seed}.json"
-                shutil.copy(traj_source, target_path)
-            else:
-                print(f"!!! WARNING: Trajectory file not found at {traj_source}")
-            
-            ckpt_source = f"{run_dir}/checkpoints/best.ckpt"
-            if os.path.exists(ckpt_source):
-                target_ckpt = f"checkpoints/best_{setup_id}_seed{seed}.ckpt"
-                shutil.copy(ckpt_source, target_ckpt)
-            else:
-                print(f"!!! WARNING: Checkpoint file not found at {ckpt_source}")
-
-            run_stage([
-                "python", "src/train_conditioned_head.py",
-                "--dataset", dataset, "--split", noisy_split, "--seed", str(seed),
-            ])
-            run_stage([
-                "python", "src/evaluate_top2_correction.py",
-                "--dataset", dataset, "--split", noisy_split, "--seed", str(seed),
-            ])
-            collect_run_artifacts(dataset_name, noisy_split, seed, run_dir)
+    for setup in setups_to_run:
+        run_setup(setup, seed_values)
 
     # Run aggregate evaluations only after every independent run has completed.
-    for setup in setups:
+    for setup in setups_to_run:
         dataset_name = setup["dataset_name"]
         noisy_split = setup["noisy_split"]
         dataset = dataset_name.removesuffix("n")
         setup_id = f"{dataset_name}_{noisy_split}"
         ensemble_checkpoints = [
-            Path(f"checkpoints/best_{setup_id}_seed{seed}.ckpt") for seed in seeds
+            Path(f"checkpoints/best_{setup_id}_seed{seed}.ckpt") for seed in seed_values
         ]
         if all(checkpoint.exists() for checkpoint in ensemble_checkpoints):
             run_stage([
@@ -146,12 +151,12 @@ def main():
         else:
             print(f"!!! WARNING: Skipping {setup_id} ensemble; fewer than {len(seeds)} checkpoints exist.")
 
-    for setup in setups:
+    for setup in setups_to_run:
         dataset_name = setup["dataset_name"]
         noisy_split = setup["noisy_split"]
         dataset = dataset_name.removesuffix("n")
         setup_id = f"{dataset_name}_{noisy_split}"
-        tta_checkpoint = Path(f"checkpoints/best_{setup_id}_seed{seeds[0]}.ckpt")
+        tta_checkpoint = Path(f"checkpoints/best_{setup_id}_seed{seed_values[0]}.ckpt")
         if tta_checkpoint.exists():
             run_stage([
                 "python", "src/evaluate_tta.py",
@@ -162,6 +167,10 @@ def main():
             print(f"!!! WARNING: Skipping {setup_id} TTA; setup checkpoint is required.")
 
     collect_shared_artifacts()
+
+
+def main():
+    run_setups(setups)
 
 if __name__ == "__main__":
     main()
