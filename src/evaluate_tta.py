@@ -1,4 +1,5 @@
-import sys
+import argparse
+import json
 import os
 import torch
 import torch.nn.functional as F
@@ -8,32 +9,41 @@ from tqdm import tqdm
 
 sys.path.append(os.getcwd())
 from src.model import ResNetClassifier
-from train_meta import MetaRegressor
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 1. ЗАГРУЗКА МОДЕЛЕЙ
-print("Загрузка моделей...")
-student = ResNetClassifier.load_from_checkpoint('checkpoints/best.ckpt', map_location=device)
+parser = argparse.ArgumentParser(description="Evaluate uncertainty-weighted TTA.")
+parser.add_argument("--dataset", choices=["cifar10", "cifar100"], default="cifar10")
+parser.add_argument("--split", default="worse")
+parser.add_argument("--checkpoint", required=True)
+parser.add_argument("--output", default=None)
+args = parser.parse_args()
+setup_id = f"{args.dataset}n_{args.split}"
+
+# 1. Загрузка модели
+print("Загрузка модели...")
+num_classes = 10 if args.dataset == "cifar10" else 100
+student = ResNetClassifier.load_from_checkpoint(
+    args.checkpoint, map_location=device, num_classes=num_classes,
+)
 student.to(device)
 student.eval()
-
-meta = MetaRegressor()
-meta_ckpt = 'meta_model.pth' if os.path.exists('meta_model.pth') else 'checkpoints/meta_model.pth'
-state_dict = torch.load(meta_ckpt, map_location=device)
-new_state_dict = {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
-meta.load_state_dict(new_state_dict, strict=True)
-meta.to(device)
-meta.eval()
 
 # 2. БЕЗОПАСНЫЕ АУГМЕНТАЦИИ ДЛЯ 32x32
 class TTADataset(Dataset):
     def __init__(self, root, K=20):
-        self.base = datasets.CIFAR10(root=root, train=False, download=True)
+        dataset_cls = datasets.CIFAR10 if args.dataset == "cifar10" else datasets.CIFAR100
+        self.base = dataset_cls(root=root, train=False, download=True)
         self.K = K
+        if args.dataset == "cifar10":
+            mean = (0.4914, 0.4822, 0.4465)
+            std = (0.2023, 0.1994, 0.2010)
+        else:
+            mean = (0.5071, 0.4867, 0.4408)
+            std = (0.2675, 0.2565, 0.2761)
         self.transform_base = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+            transforms.Normalize(mean, std)
         ])
         # SAFE TTA: Без агрессивного кропа!
         self.transform_tta = transforms.Compose([
@@ -41,7 +51,7 @@ class TTADataset(Dataset):
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
             transforms.RandomAffine(degrees=0, translate=(0.0625, 0.0625)), # Сдвиг макс на 2 пикселя
             transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+            transforms.Normalize(mean, std)
         ])
 
     def __len__(self): return len(self.base)
@@ -76,7 +86,8 @@ with torch.no_grad():
             if isinstance(logits, tuple): logits = logits[0]
             batch_probs.append(F.softmax(logits, dim=1).cpu())
             
-            unc = meta(v).cpu()
+            # Predictive entropy provides a model-agnostic uncertainty score for TTA.
+            unc = -torch.sum(batch_probs[-1] * torch.log(batch_probs[-1] + 1e-8), dim=1)
             batch_uncs.append(unc)
             
         all_probs.append(torch.stack(batch_probs, dim=1))
@@ -117,3 +128,18 @@ for T in temperatures:
 
 print(f"3. Uncertainty-Weighted TTA:     {best_acc:.2f}% (Прирост: {best_acc - acc_base:+.2f}%) [Оптимальная T={best_t}]")
 print(f"🔥 Чистая польза нашего метода:  +{best_acc - acc_std:.2f}% поверх обычного TTA!")
+
+output_path = args.output or f"results/tta_metrics_{setup_id}.json"
+os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+with open(output_path, "w") as output_file:
+    json.dump({
+        "dataset": args.dataset,
+        "noisy_split": args.split,
+        "checkpoint": args.checkpoint,
+        "num_augmentations": K_AUGMENTATIONS,
+        "baseline_accuracy": acc_base / 100,
+        "standard_tta_accuracy": acc_std / 100,
+        "uncertainty_weighted_tta_accuracy": best_acc / 100,
+        "best_temperature": best_t,
+    }, output_file, indent=2)
+print(f"Results saved to {output_path}")

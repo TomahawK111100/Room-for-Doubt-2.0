@@ -94,6 +94,7 @@ class ConditionedPredictor(nn.Module):
 def main():
     parser = argparse.ArgumentParser(description="Train conditioned trajectory predictor.")
     parser.add_argument("--dataset", type=str, default="cifar10", choices=["cifar10", "cifar100"])
+    parser.add_argument("--split", type=str, default="worse")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -114,7 +115,8 @@ def main():
     ])
     
     # Load dataset
-    trajectory_path = f"results/stage1_trajectories_{args.dataset}_seed{args.seed}.json"
+    setup_id = f"{args.dataset}n_{args.split}"
+    trajectory_path = f"results/stage1_trajectories_{setup_id}_seed{args.seed}.json"
     if not os.path.exists(trajectory_path):
         raise FileNotFoundError(
             f"Trajectory file '{trajectory_path}' not found. Run stage 1 for this dataset and seed first."
@@ -157,7 +159,7 @@ def main():
         
     # Save the model
     os.makedirs('checkpoints', exist_ok=True)
-    save_path = f"checkpoints/cond_head_{args.dataset}_seed{args.seed}.pth"
+    save_path = f"checkpoints/cond_head_{setup_id}_seed{args.seed}.pth"
     torch.save(model.state_dict(), save_path)
     print(f"Model saved successfully to {save_path}")
 

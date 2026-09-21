@@ -57,8 +57,9 @@ def load_noisy_labels(data_dir: str, dataset_name: str, noisy_split: str) -> Tup
     if not os.path.exists(path):
         print("Используем локальную имитацию шумных меток...")
         np.random.seed(42)
-        noisy = np.random.randint(0, 10, size=(50000,), dtype=np.int64)
-        clean = np.random.randint(0, 10, size=(50000,), dtype=np.int64)
+        num_classes_dummy = 100 if dataset_name == "cifar100n" else 10
+        noisy = np.random.randint(0, num_classes_dummy, size=(50000,), dtype=np.int64)
+        clean = np.random.randint(0, num_classes_dummy, size=(50000,), dtype=np.int64)
         return noisy, clean
         
     raw = torch.load(path, map_location="cpu", weights_only=False)
