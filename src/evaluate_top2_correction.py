@@ -64,10 +64,12 @@ class DualTransformCIFAR(Dataset):
 def main():
     parser = argparse.ArgumentParser(description="Evaluate top-2 correction pipeline.")
     parser.add_argument("--dataset", type=str, default="cifar10", choices=["cifar10", "cifar100"])
+    parser.add_argument("--split", type=str, default="worse")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
     set_seed(args.seed)
+    setup_id = f"{args.dataset}n_{args.split}"
 
     if args.dataset == "cifar10":
         dataset_cls = torchvision.datasets.CIFAR10
@@ -85,7 +87,7 @@ def main():
 
     # 1. Train Badness Detector
     print("Training LDA Badness Detector...")
-    trajectory_path = f"results/stage1_trajectories_{args.dataset}_seed{args.seed}.json"
+    trajectory_path = f"results/stage1_trajectories_{setup_id}_seed{args.seed}.json"
     with open(trajectory_path, 'r') as f:
         trajectories = json.load(f)
 
@@ -115,7 +117,7 @@ def main():
     # 2. Load Models
     print("Loading models...")
     
-    student_ckpt = f"checkpoints/best_{args.dataset}_seed{args.seed}.ckpt"
+    student_ckpt = f"checkpoints/best_{setup_id}_seed{args.seed}.ckpt"
     if not os.path.exists(student_ckpt):
         raise FileNotFoundError(f"Student checkpoint '{student_ckpt}' not found.")
         
@@ -123,7 +125,7 @@ def main():
     student.to(device)
     student.eval()
 
-    cond_ckpt = f"checkpoints/cond_head_{args.dataset}_seed{args.seed}.pth"
+    cond_ckpt = f"checkpoints/cond_head_{setup_id}_seed{args.seed}.pth"
     if not os.path.exists(cond_ckpt):
         raise FileNotFoundError(f"ConditionedPredictor checkpoint '{cond_ckpt}' not found.")
 
@@ -152,10 +154,14 @@ def main():
     corrected_badness_c2 = []
     
     all_badness_c1 = []
+    all_badness_c2 = []
     all_msp = []
     all_entropy = []
     all_margin = []
     all_errors = []
+    all_c1 = []
+    all_c2 = []
+    all_labels = []
 
     with torch.no_grad():
         for img_student, img_predictor, labels in test_loader:
@@ -191,45 +197,79 @@ def main():
             badness_c2 = lda.predict_proba(traj_c2_np)[:, 1]
             
             all_badness_c1.extend(badness_c1)
+            all_badness_c2.extend(badness_c2)
             all_msp.extend(msp.cpu().numpy())
             all_entropy.extend(entropy.cpu().numpy())
             all_margin.extend(margin.cpu().numpy())
             all_errors.extend((c1 != labels).cpu().numpy().astype(int))
+            all_c1.extend(c1.cpu().numpy())
+            all_c2.extend(c2.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
             
-            # 4. Correction Logic
-            final_preds = c1.clone()
-            
-            # If badness_c1 > 0.5 AND badness_c2 < 0.5, change the prediction to c2
-            mask = (torch.tensor(badness_c1) > 0.5) & (torch.tensor(badness_c2) < 0.5)
-            mask = mask.to(device)
-            final_preds[mask] = c2[mask]
-            
-            mask_correct_c1 = (c1 == labels)
-            mask_correct_c2 = (c2 == labels)
-            
-            successful_corrections += (mask & ~mask_correct_c1 & mask_correct_c2).sum().item()
-            harmful_corrections += (mask & mask_correct_c1).sum().item()
-            neutral_corrections += (mask & ~mask_correct_c1 & ~mask_correct_c2).sum().item()
-            
-            mask_np = mask.cpu().numpy()
-            corrected_badness_c1.extend(badness_c1[mask_np])
-            corrected_badness_c2.extend(badness_c2[mask_np])
-            
-            total_corrections += mask.sum().item()
-            baseline_correct += (c1 == labels).sum().item()
-            corrected_correct += (final_preds == labels).sum().item()
-            total_samples += labels.size(0)
-
     # 5. Metrics
-    baseline_acc = baseline_correct / total_samples
+    all_badness_c1 = np.array(all_badness_c1)
+    all_badness_c2 = np.array(all_badness_c2)
+    all_c1 = np.array(all_c1)
+    all_c2 = np.array(all_c2)
+    all_labels = np.array(all_labels)
+
+    baseline_acc = (all_c1 == all_labels).mean()
+    total_samples = len(all_labels)
+
+    mask = (all_badness_c1 > 0.5) & (all_badness_c2 < 0.5)
+    final_preds = all_c1.copy()
+    final_preds[mask] = all_c2[mask]
+
+    mask_correct_c1 = (all_c1 == all_labels)
+    mask_correct_c2 = (all_c2 == all_labels)
+
+    successful_corrections = (mask & ~mask_correct_c1 & mask_correct_c2).sum()
+    harmful_corrections = (mask & mask_correct_c1).sum()
+    neutral_corrections = (mask & ~mask_correct_c1 & ~mask_correct_c2).sum()
+
+    total_corrections = mask.sum()
+    baseline_correct = mask_correct_c1.sum()
+    corrected_correct = (final_preds == all_labels).sum()
+
+    corrected_badness_c1 = all_badness_c1[mask]
+    corrected_badness_c2 = all_badness_c2[mask]
+
     corrected_acc = corrected_correct / total_samples
     acc_gain = corrected_acc - baseline_acc
-    
+
+    import pandas as pd
+    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    sweep_results = []
+
+    for thr in thresholds:
+        thr_mask = (all_badness_c1 > thr) & (all_badness_c2 < thr)
+        thr_final_preds = all_c1.copy()
+        thr_final_preds[thr_mask] = all_c2[thr_mask]
+
+        thr_corrected_acc = (thr_final_preds == all_labels).mean()
+        thr_succ = (thr_mask & ~mask_correct_c1 & mask_correct_c2).sum()
+        thr_harm = (thr_mask & mask_correct_c1).sum()
+        thr_neut = (thr_mask & ~mask_correct_c1 & ~mask_correct_c2).sum()
+
+        sweep_results.append({
+            "threshold": thr,
+            "corrected_accuracy": thr_corrected_acc,
+            "successful_corrections": thr_succ,
+            "harmful_corrections": thr_harm,
+            "neutral_corrections": thr_neut
+        })
+
+    df_sweep = pd.DataFrame(sweep_results)
+    os.makedirs("results", exist_ok=True)
+    sweep_path = f"results/threshold_sweep_{setup_id}_seed{args.seed}.csv"
+    df_sweep.to_csv(sweep_path, index=False)
+    print(f"\nSaved threshold sweep results to {sweep_path}")
+
     print("\n--- Evaluation Results ---")
     print(f"Baseline Accuracy (Top-1): {baseline_acc * 100:.2f}%")
     print(f"Corrected Accuracy:        {corrected_acc * 100:.2f}%")
     print(f"Absolute Accuracy Gain:    {acc_gain * 100:.2f}%")
-    
+
     print("\n--- Detailed Correction Tracking ---")
     print(f"Total Corrections Attempted: {total_corrections}")
     print(f"  Successful (Fixed error):  {successful_corrections}")
@@ -270,7 +310,7 @@ def main():
     for bar in bars:
         yval = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2, yval + 1, f'{yval:.2f}%', ha='center', va='bottom')
-    plt.savefig('plots/top2_accuracy_gain.png')
+    plt.savefig(f'plots/top2_accuracy_gain_{setup_id}_seed{args.seed}.png')
     plt.close()
     
     # KDE plot for Badness distributions of corrected samples
@@ -282,7 +322,7 @@ def main():
         plt.ylabel('Density')
         plt.title('Badness Distribution for Corrected Samples')
         plt.legend()
-        plt.savefig('plots/top2_badness_distribution.png')
+        plt.savefig(f'plots/top2_badness_distribution_{setup_id}_seed{args.seed}.png')
         plt.close()
     else:
         print("\nNo corrections made; skipping badness distribution plot.")
