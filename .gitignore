@@ -33,3 +33,6 @@ checkpoints/
 lightning_logs/
 stage1_trajectories.json
 stage1_trajectories.zip
+checkpoints/
+*.ckpt
+*.pth
