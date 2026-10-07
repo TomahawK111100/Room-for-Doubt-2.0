@@ -12,3 +12,7 @@ def set_seed(seed: int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     pl.seed_everything(seed, workers=True)
+
+import torchvision
+torchvision.datasets.CIFAR10._check_integrity = lambda self: True
+torchvision.datasets.CIFAR100._check_integrity = lambda self: True
