@@ -58,8 +58,60 @@ class DualTransformCIFAR(Dataset):
         return len(self.base_dataset)
 
     def __getitem__(self, idx):
-        img, label = self.base_dataset[idx]
+        item = self.base_dataset[idx]
+        if len(item) == 2:
+            img, label = item
+        elif len(item) == 4:
+            img, noisy_label, clean_label, sample_id = item
+            label = noisy_label  # Use noisy label to prevent data leakage
+        else:
+            img, label = item[0], item[1]
         return self.transform_student(img), self.transform_predictor(img), label
+
+def get_predictions(loader, student, predictor, lda, device):
+    all_badness_c1, all_badness_c2 = [], []
+    all_c1, all_c2, all_labels = [], [], []
+    all_msp, all_entropy, all_margin, all_errors = [], [], [], []
+
+    with torch.no_grad():
+        for img_student, img_predictor, labels in loader:
+            img_student = img_student.to(device)
+            img_predictor = img_predictor.to(device)
+            labels = labels.to(device)
+            
+            logits = student(img_student)
+            top2 = torch.topk(logits, k=2, dim=1)
+            c1 = top2.indices[:, 0]
+            c2 = top2.indices[:, 1]
+            
+            probs = torch.softmax(logits, dim=1)
+            msp, _ = torch.max(probs, dim=1)
+            entropy = -torch.sum(probs * torch.log(probs + 1e-12), dim=1)
+            top2_probs = torch.topk(probs, k=2, dim=1).values
+            margin = top2_probs[:, 0] - top2_probs[:, 1]
+            
+            traj_c1 = predictor(img_predictor, c1)
+            traj_c2 = predictor(img_predictor, c2)
+            
+            traj_c1_np = traj_c1.cpu().numpy()
+            traj_c2_np = traj_c2.cpu().numpy()
+            
+            badness_c1 = lda.predict_proba(traj_c1_np)[:, 1]
+            badness_c2 = lda.predict_proba(traj_c2_np)[:, 1]
+            
+            all_badness_c1.extend(badness_c1)
+            all_badness_c2.extend(badness_c2)
+            all_msp.extend(msp.cpu().numpy())
+            all_entropy.extend(entropy.cpu().numpy())
+            all_margin.extend(margin.cpu().numpy())
+            all_errors.extend((c1 != labels).cpu().numpy().astype(int))
+            all_c1.extend(c1.cpu().numpy())
+            all_c2.extend(c2.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+            
+    return (np.array(all_badness_c1), np.array(all_badness_c2), 
+            np.array(all_c1), np.array(all_c2), np.array(all_labels),
+            np.array(all_msp), np.array(all_entropy), np.array(all_margin), np.array(all_errors))
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate top-2 correction pipeline.")
@@ -69,7 +121,7 @@ def main():
     args = parser.parse_args()
 
     set_seed(args.seed)
-    setup_id = f"{args.dataset}n_{args.split}"
+    setup_id = f"{args.dataset}n_{"worse"}"
 
     if args.dataset == "cifar10":
         dataset_cls = torchvision.datasets.CIFAR10
@@ -87,7 +139,7 @@ def main():
 
     # 1. Train Badness Detector
     print("Training LDA Badness Detector...")
-    trajectory_path = f"results/stage1_trajectories_{setup_id}_seed{args.seed}.json"
+    trajectory_path = f"results/stage1_trajectories_cifar10_seed{args.seed}.json"
     with open(trajectory_path, 'r') as f:
         trajectories = json.load(f)
 
@@ -117,7 +169,7 @@ def main():
     # 2. Load Models
     print("Loading models...")
     
-    student_ckpt = f"checkpoints/best_{setup_id}_seed{args.seed}.ckpt"
+    student_ckpt = f"checkpoints/best_cifar10_seed{args.seed}.ckpt"
     if not os.path.exists(student_ckpt):
         raise FileNotFoundError(f"Student checkpoint '{student_ckpt}' not found.")
         
@@ -125,7 +177,7 @@ def main():
     student.to(device)
     student.eval()
 
-    cond_ckpt = f"checkpoints/cond_head_{setup_id}_seed{args.seed}.pth"
+    cond_ckpt = f"checkpoints/cond_head_cifar10_seed{args.seed}.pth"
     if not os.path.exists(cond_ckpt):
         raise FileNotFoundError(f"ConditionedPredictor checkpoint '{cond_ckpt}' not found.")
 
@@ -134,89 +186,69 @@ def main():
     predictor.to(device)
     predictor.eval()
 
-    # 3. Inference Loop
-    print(f"Evaluating on {args.dataset.upper()} test dataset...")
+    # 3. Threshold Selection on Validation Set
+    print("Finding optimal threshold on validation set...")
+    from src.dataset import NoisyCIFARDataset
+    val_indices = np.arange(45000, 50000)
+    dataset_name = "cifar10n" if args.dataset == "cifar10" else "cifar100n"
+    val_subset = NoisyCIFARDataset(
+        data_dir='./data',
+        dataset_name=dataset_name,
+        noisy_split="worse",
+        indices=val_indices,
+        num_classes=num_classes
+    )
+    val_dual_dataset = DualTransformCIFAR(val_subset, cifar_mean=cifar_mean, cifar_std=cifar_std)
+    val_loader = DataLoader(val_dual_dataset, batch_size=128, shuffle=False, num_workers=2)
 
-    test_dataset = dataset_cls(root='./data', train=False, download=True)
-    dual_dataset = DualTransformCIFAR(test_dataset, cifar_mean=cifar_mean, cifar_std=cifar_std)
-    test_loader = DataLoader(dual_dataset, batch_size=128, shuffle=False, num_workers=2)
+    val_res = get_predictions(val_loader, student, predictor, lda, device)
+    val_badness_c1, val_badness_c2, val_c1, val_c2, val_labels, _, _, _, _ = val_res
 
-    baseline_correct = 0
-    corrected_correct = 0
-    total_samples = 0
-    total_corrections = 0
-    
-    successful_corrections = 0
-    harmful_corrections = 0
-    neutral_corrections = 0
-    
-    corrected_badness_c1 = []
-    corrected_badness_c2 = []
-    
-    all_badness_c1 = []
-    all_badness_c2 = []
-    all_msp = []
-    all_entropy = []
-    all_margin = []
-    all_errors = []
-    all_c1 = []
-    all_c2 = []
-    all_labels = []
+    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    best_thr = 0.5
+    best_val_acc = -1
+    val_sweep_results = []
 
-    with torch.no_grad():
-        for img_student, img_predictor, labels in test_loader:
-            img_student = img_student.to(device)
-            img_predictor = img_predictor.to(device)
-            labels = labels.to(device)
+    for thr in thresholds:
+        thr_mask = (val_badness_c1 > thr) & (val_badness_c2 < thr)
+        thr_final_preds = val_c1.copy()
+        thr_final_preds[thr_mask] = val_c2[thr_mask]
+        thr_corrected_acc = (thr_final_preds == val_labels).mean()
+        
+        val_sweep_results.append({
+            "threshold": thr,
+            "val_corrected_accuracy": thr_corrected_acc
+        })
+        
+        if thr_corrected_acc > best_val_acc:
+            best_val_acc = thr_corrected_acc
+            best_thr = thr
             
-            # Get logits from Student
-            logits = student(img_student)
+    import pandas as pd
+    df_val_sweep = pd.DataFrame(val_sweep_results)
+    os.makedirs("results", exist_ok=True)
+    sweep_path = f"results/val_threshold_sweep_cifar10_seed{args.seed}.csv"
+    df_val_sweep.to_csv(sweep_path, index=False)
+    print(f"Saved validation threshold sweep results to {sweep_path}")
             
-            # Find Top-1 (c1) and Top-2 (c2) predicted classes
-            top2 = torch.topk(logits, k=2, dim=1)
-            c1 = top2.indices[:, 0]
-            c2 = top2.indices[:, 1]
-            
-            # Compute classical uncertainty baselines
-            probs = torch.softmax(logits, dim=1)
-            msp, _ = torch.max(probs, dim=1)
-            entropy = -torch.sum(probs * torch.log(probs + 1e-12), dim=1)
-            top2_probs = torch.topk(probs, k=2, dim=1).values
-            margin = top2_probs[:, 0] - top2_probs[:, 1]
-            
-            # Use ConditionedPredictor to predict trajectories for both classes
-            traj_c1 = predictor(img_predictor, c1)
-            traj_c2 = predictor(img_predictor, c2)
-            
-            # Pass both trajectories to the trained LDA predict_proba to get badness scores
-            traj_c1_np = traj_c1.cpu().numpy()
-            traj_c2_np = traj_c2.cpu().numpy()
-            
-            # badness is the probability of class 1 (i.e. noisy_label != clean_label)
-            badness_c1 = lda.predict_proba(traj_c1_np)[:, 1]
-            badness_c2 = lda.predict_proba(traj_c2_np)[:, 1]
-            
-            all_badness_c1.extend(badness_c1)
-            all_badness_c2.extend(badness_c2)
-            all_msp.extend(msp.cpu().numpy())
-            all_entropy.extend(entropy.cpu().numpy())
-            all_margin.extend(margin.cpu().numpy())
-            all_errors.extend((c1 != labels).cpu().numpy().astype(int))
-            all_c1.extend(c1.cpu().numpy())
-            all_c2.extend(c2.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
-            
-    # 5. Metrics
-    all_badness_c1 = np.array(all_badness_c1)
-    all_badness_c2 = np.array(all_badness_c2)
-    all_c1 = np.array(all_c1)
-    all_c2 = np.array(all_c2)
-    all_labels = np.array(all_labels)
+    print(f"Optimal threshold selected: {best_thr:.1f} (Val Acc: {best_val_acc * 100:.2f}%)")
+
+    # 4. Inference Loop on Test Set
+    print(f"\nEvaluating on {args.dataset.upper()} test dataset with optimal threshold {best_thr:.1f}...")
+
+    test_dataset = dataset_cls(root='./data', train=False, download=False)
+    test_dual_dataset = DualTransformCIFAR(test_dataset, cifar_mean=cifar_mean, cifar_std=cifar_std)
+    test_loader = DataLoader(test_dual_dataset, batch_size=128, shuffle=False, num_workers=2)
+
+    test_res = get_predictions(test_loader, student, predictor, lda, device)
+    (all_badness_c1, all_badness_c2, all_c1, all_c2, all_labels,
+     all_msp, all_entropy, all_margin, all_errors) = test_res
 
     baseline_acc = (all_c1 == all_labels).mean()
     total_samples = len(all_labels)
 
-    mask = (all_badness_c1 > 0.5) & (all_badness_c2 < 0.5)
+    # Use ONLY the optimal threshold
+    mask = (all_badness_c1 > best_thr) & (all_badness_c2 < best_thr)
     final_preds = all_c1.copy()
     final_preds[mask] = all_c2[mask]
 
@@ -236,34 +268,6 @@ def main():
 
     corrected_acc = corrected_correct / total_samples
     acc_gain = corrected_acc - baseline_acc
-
-    import pandas as pd
-    thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    sweep_results = []
-
-    for thr in thresholds:
-        thr_mask = (all_badness_c1 > thr) & (all_badness_c2 < thr)
-        thr_final_preds = all_c1.copy()
-        thr_final_preds[thr_mask] = all_c2[thr_mask]
-
-        thr_corrected_acc = (thr_final_preds == all_labels).mean()
-        thr_succ = (thr_mask & ~mask_correct_c1 & mask_correct_c2).sum()
-        thr_harm = (thr_mask & mask_correct_c1).sum()
-        thr_neut = (thr_mask & ~mask_correct_c1 & ~mask_correct_c2).sum()
-
-        sweep_results.append({
-            "threshold": thr,
-            "corrected_accuracy": thr_corrected_acc,
-            "successful_corrections": thr_succ,
-            "harmful_corrections": thr_harm,
-            "neutral_corrections": thr_neut
-        })
-
-    df_sweep = pd.DataFrame(sweep_results)
-    os.makedirs("results", exist_ok=True)
-    sweep_path = f"results/threshold_sweep_{setup_id}_seed{args.seed}.csv"
-    df_sweep.to_csv(sweep_path, index=False)
-    print(f"\nSaved threshold sweep results to {sweep_path}")
 
     print("\n--- Evaluation Results ---")
     print(f"Baseline Accuracy (Top-1): {baseline_acc * 100:.2f}%")
@@ -310,7 +314,7 @@ def main():
     for bar in bars:
         yval = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2, yval + 1, f'{yval:.2f}%', ha='center', va='bottom')
-    plt.savefig(f'plots/top2_accuracy_gain_{setup_id}_seed{args.seed}.png')
+    plt.savefig(f'plots/top2_accuracy_gain_cifar10_seed{args.seed}.png')
     plt.close()
     
     # KDE plot for Badness distributions of corrected samples
@@ -322,7 +326,7 @@ def main():
         plt.ylabel('Density')
         plt.title('Badness Distribution for Corrected Samples')
         plt.legend()
-        plt.savefig(f'plots/top2_badness_distribution_{setup_id}_seed{args.seed}.png')
+        plt.savefig(f'plots/top2_badness_distribution_cifar10_seed{args.seed}.png')
         plt.close()
     else:
         print("\nNo corrections made; skipping badness distribution plot.")

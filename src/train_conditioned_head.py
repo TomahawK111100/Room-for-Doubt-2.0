@@ -30,7 +30,7 @@ class CondTrajDataset(Dataset):
         else:
             raise ValueError(f"Unsupported dataset: {dataset_name}")
 
-        self.cifar = dataset_cls(root=root_dir, train=True, download=True, transform=transform)
+        self.cifar = dataset_cls(root=root_dir, train=True, download=False, transform=transform)
         with open(traj_file, 'r') as f:
             self.trajectories = json.load(f)
             
