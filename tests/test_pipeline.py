@@ -1,25 +1,23 @@
-import json
-import os
 import shutil
 
 import pandas as pd
 import pytest
 import torch
 from hydra import compose, initialize_config_dir
-from omegaconf import OmegaConf
 from pathlib import Path
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-from src.dataset import CIFARDataModule, get_train_val_indices
-from src.logging_utils import (
-    TRAJECTORY_COLUMNS,
-    generate_report,
-    save_metrics,
-    save_run_metadata,
+from room_for_doubt.data.cifar_noisy import CIFARDataModule, get_train_val_indices
+from room_for_doubt.dynamics.serialization import (
     save_trajectory_batch,
     validate_trajectory_schema,
 )
-from src.model import ResNetClassifier
+from room_for_doubt.reporting.artifacts import (
+    generate_report,
+    save_metrics,
+    save_run_metadata,
+)
+from room_for_doubt.models.classifier import ResNetClassifier
 
 REPO = Path(__file__).resolve().parents[1]
 CONFIG_DIR = str(REPO / "configs")
@@ -27,7 +25,9 @@ CONFIG_DIR = str(REPO / "configs")
 
 @pytest.fixture(scope="module")
 def dm():
-    d = CIFARDataModule(data_dir="./data", batch_size=32, num_workers=0, val_ratio=0.1, seed=42)
+    d = CIFARDataModule(
+        data_dir="./data", batch_size=32, num_workers=0, val_ratio=0.1, seed=42
+    )
     d.prepare_data()
     d.setup()
     return d
@@ -39,6 +39,7 @@ def tmp_out(tmp_path):
     shutil.rmtree(tmp_path, ignore_errors=True)
 
 
+@pytest.mark.integration
 def test_train_val_split(dm):
     assert len(dm.train_set) == 45000
     assert len(dm.val_set) == 5000
@@ -52,11 +53,13 @@ def test_stable_sample_ids():
     assert (a == c).all() and (b == d).all()
 
 
+@pytest.mark.integration
 def test_dataloader_format(dm):
     imgs, ny, cl, sid = next(iter(dm.train_dataloader()))
     assert imgs.shape == (32, 3, 32, 32) and ny.shape == cl.shape == sid.shape == (32,)
 
 
+@pytest.mark.integration
 def test_resnet(dm):
     m = ResNetClassifier(num_classes=10, pretrained=False)
     batch = next(iter(dm.train_dataloader()))
@@ -88,8 +91,13 @@ def test_run_artifacts(tmp_out):
     cfg = {"dataset": {"name": "cifar10n", "noisy_split": "worse", "val_ratio": 0.1}}
     save_run_metadata(tmp_out, "r1", cfg, seed=42, checkpoint_path="ckpt/best.ckpt")
     save_metrics(tmp_out, {"val_loss": 0.5})
-    generate_report(tmp_out, "r1", cfg, {"val_loss": 0.5}, {"checkpoint_path": "ckpt/best.ckpt"})
-    assert all((Path(tmp_out) / f).exists() for f in ["run_metadata.json", "metrics.json", "report.md"])
+    generate_report(
+        tmp_out, "r1", cfg, {"val_loss": 0.5}, {"checkpoint_path": "ckpt/best.ckpt"}
+    )
+    assert all(
+        (Path(tmp_out) / f).exists()
+        for f in ["run_metadata.json", "metrics.json", "report.md"]
+    )
 
 
 def test_hydra_config():

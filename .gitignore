@@ -1,22 +1,23 @@
-data/
-data_test/
+/data/
+/data_test/
 *.tar.gz
 *.npy
 *.mat
 *.pt
 *.pth
 *.ckpt
-outputs/
-multirun/
-lightning_logs/
+/outputs/
+/multirun/
+/lightning_logs/
 .hydra/
-trajectories/
+/trajectories/
 stage1_trajectories.json
 stage1_trajectories.zip
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+.ruff_cache/
 .DS_Store
 .vscode/
 .idea/
@@ -24,3 +25,68 @@ venv/
 .venv/
 env/
 *.json
+.antigravity/
+
+# Внутренние инструменты агентов (ARIS / Antigravity / Cursor)
+.cursor/
+EXPERIMENT_LOG.md
+aris_repo/
+
+# Local datasets, generated runs, agent state and checkpoints
+/datasets/
+/checkpoints/
+/src/checkpoints/
+/artifacts/
+/.aris/
+/aris_tmp/
+/results/**/artifacts/
+/results/**/checkpoints/
+/results/**/trajectories/
+/results/**/predictions/
+/results/**/cache/
+
+# Large binary artifacts and archives
+*.npz
+*.pkl
+*.pickle
+*.joblib
+*.safetensors
+*.h5
+*.hdf5
+*.parquet
+*.arrow
+*.zip
+*.tar
+*.tgz
+*.7z
+
+# Packaging and local credentials
+/build/
+/dist/
+*.egg-info/
+.env
+.env.*
+!.env.example
+
+# Small reproducibility JSON files allowed in public locations
+!/configs/**/*.json
+!/tests/fixtures/**/*.json
+!/results/**/metrics.json
+!/results/**/run_metadata.json
+!/results/**/artifact_manifest.json
+
+# Compact protocol audit evidence
+!/results/protocol_audit_20261014/*.json
+
+# Small experiment integrity audit verdicts
+!/results/**/EXPERIMENT_AUDIT.json
+
+# Local research reports and archived plots: deliberately not published
+/results/
+/plots/
+/refine-logs/
+/EXPERIMENT_AUDIT.md
+/docs/*
+!/docs/kaggle.md
+!/docs/reproduction.md
+!/docs/repository_layout.md

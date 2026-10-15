@@ -302,3 +302,18 @@ A task is complete when it has:
 * basic validation for fragile logic.
 
 A training run is not complete until its outputs can be inspected.
+
+
+## 14. Local ARIS Installation
+
+ARIS skills are installed under `.antigravity/skills/` from upstream commit
+`26b95cfa0d8747078e9e43b42e20952709e561b8`. Read
+`.antigravity/AGENT_GUIDE.md` for routing and the relevant skill before using it.
+Codex-specific variants live under `.antigravity/skills/skills-codex/`.
+The upstream version contains no `HERO.md`; the guide is used under its actual
+name, not represented as HERO rules. This optional local installation is ignored
+by Git and is not required to install or run the research package.
+
+Repository commands and migration mappings are documented in
+`docs/reproduction.md` and `docs/repository_layout.md`. Use the offline test suite
+for structural changes; do not rerun recorded experiments just to validate moves.

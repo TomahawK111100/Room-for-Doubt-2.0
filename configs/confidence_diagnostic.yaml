@@ -1,0 +1,12 @@
+run_id: cifar100_confidence_diagnostic_20261015
+output_dir: outputs
+cache_dir: outputs/final_cache_cifar100n_20261015
+data_dir: data
+dataset:
+  name: cifar100n
+  noisy_split: noisy100
+temperatures: [0.02, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0]
+label_source: noisy_validation_only
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

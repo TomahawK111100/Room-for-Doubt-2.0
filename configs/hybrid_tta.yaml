@@ -1,0 +1,19 @@
+run_id: cifar100_hybrid_tta_20261015
+output_dir: outputs
+cache_dir: outputs/final_cache_cifar100n_20261015
+study_dir: outputs/architecture_study_20261015
+head_template: outputs/meta_study_cifar100n_conditioned_seed{seed}_20261015
+data_dir: data
+dataset:
+  name: cifar100n
+  noisy_split: noisy100
+seeds: [42, 43, 44]
+inference_seed: 20261015
+flow_samples: 5
+flow_steps: 10
+alphas: [0.0, 0.5, 1.0]
+temperatures: [0.05, 0.1, 0.25]
+mixtures: [0.5, 1.0]
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}
