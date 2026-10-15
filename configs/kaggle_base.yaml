@@ -1,0 +1,31 @@
+run_id: cifar100n_resnet50_gce_seed42
+output_dir: /kaggle/working/rfd_outputs
+data_dir: /kaggle/working/rfd_data
+dataset:
+  name: cifar100n
+  noisy_split: noisy100
+  num_classes: 100
+  val_ratio: 0.1
+model:
+  name: resnet50
+  weights: IMAGENET1K_V2
+image_size: 224
+seed: 42
+split_seed: 20261015
+epochs: 50
+batch_size: 128
+num_workers: 4
+optimizer:
+  name: SGD
+  lr: 0.01
+  momentum: 0.9
+  weight_decay: 0.0005
+loss:
+  q: 0.7
+  ce_warmup_epochs: 5
+max_hours: 10.5
+resume: auto
+require_cuda: true
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

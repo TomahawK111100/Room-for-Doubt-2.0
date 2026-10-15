@@ -1,0 +1,27 @@
+defaults:
+  - _self_
+  - dataset: cifar10n
+
+seed: 42
+split_seed: 20261015
+base_seed: 42
+run_id: meta_${dataset.name}_${seed}_${now:%Y%m%d_%H%M%S}
+output_dir: outputs
+target_path: null
+cache_path: null
+meta_model: conditioned
+device: auto
+epochs: 25
+batch_size: 256
+num_workers: 0
+optimizer: adam
+learning_rate: 0.001
+resume_path: null
+supervision: trajectory_regression_no_clean_labels
+preprocessing: imagenet_pil_bilinear_224
+validation_metric: native
+validation_flow_samples: 5
+validation_flow_steps: 10
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

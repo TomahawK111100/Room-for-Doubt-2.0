@@ -1,0 +1,12 @@
+run_id: evaluation_summary_20261015
+output_dir: outputs
+dataset:
+  name: CIFAR-10N Worse and CIFAR-100N
+  noisy_split: worse / noisy_label
+  val_ratio: 0.1
+inputs:
+  - outputs/evaluation_cifar10n_20261015
+  - outputs/evaluation_cifar100n_20261015
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

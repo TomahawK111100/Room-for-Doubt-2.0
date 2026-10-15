@@ -1,0 +1,32 @@
+defaults:
+  - _self_
+  - dataset: cifar10n
+run_id: evaluation_${dataset.name}_${now:%Y%m%d_%H%M%S}
+output_dir: outputs
+base_seed: 42
+split_seed: 20261015
+meta_seeds: [42, 43, 44]
+inference_seed: 20261015
+checkpoint_assumption: owner_confirmed
+base_checkpoint: checkpoints/best_${dataset.name}_worse_seed42.ckpt
+target_path: outputs/meta_inputs_${dataset.name}_seed42_20261015/artifacts/meta_targets.npz
+feature_path: outputs/meta_cache_${dataset.name}_20261015/artifacts
+meta_run_pattern: outputs/meta_corrected_${dataset.name}_seed{seed}_20261015
+cache_dir: outputs/final_cache_${dataset.name}_20261015
+device: auto
+batch_size: 64
+memory_format: channels_last
+num_workers: 0
+views: 20
+flow_samples: 5
+flow_steps: 10
+thresholds: [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+temperatures: [0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 1000000.0]
+rf_trees: 100
+rf_min_leaf: 5
+supervision: oracle_clean_train_labels
+base_normalization: historical_cifar10
+meta_preprocessing: imagenet_pil_bilinear_224
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

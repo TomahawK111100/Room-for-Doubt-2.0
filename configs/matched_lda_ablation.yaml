@@ -1,0 +1,13 @@
+seed: 42
+run_id: matched_lda_${now:%Y%m%d_%H%M%S}
+output_dir: outputs
+input_path: null
+label_kind: noise_label_detection
+supervision: oracle_clean_labels
+detector:
+  name: lda
+  solver: lsqr
+  shrinkage: auto
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}
