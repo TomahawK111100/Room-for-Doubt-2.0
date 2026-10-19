@@ -1,0 +1,15 @@
+run_id: runtime_cost
+output_dir: outputs
+source_run: null
+study_run: null
+data_dir: data
+device: auto
+head_seed: 42
+batch_images: [1, 4]
+view_counts: [1, 5, 10]
+warmup: 5
+repetitions: 30
+cpu_threads: 4
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

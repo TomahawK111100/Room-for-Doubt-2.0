@@ -86,7 +86,12 @@ results are still pending:
   construct a static target under the actual training augmentation distribution,
   reuse existing features/PCA/heads, and fit only the new static heads.
 
-Both require full Outputs, not just compact summaries. For external shared caches,
+A third follow-up, `python scripts/run.py benchmark-runtime`, prepares matched
+inference-cost measurements for the base, uniform TTA and Early-5. It records
+synchronized batch timings, separate model-only / preprocessing-inclusive scopes,
+and CUDA allocated memory where available. Real GPU measurements are pending.
+
+These follow-ups require full Outputs, not just compact summaries. For external shared caches,
 pass `post_run`; see the [follow-up instructions](docs/kaggle.md#follow-up-direct-target-contrasts-and-an-augmentation-matched-static-control).
 
 No base retraining is needed to regenerate the manuscript plots:

@@ -346,3 +346,42 @@ This control addresses augmentation acquisition, while differences in changing
 online weights, checkpoint timing and the CE/GCE schedule remain. No improvement
 is assumed in advance. Local synthetic tests verify the execution contract;
 CIFAR results require the full saved Kaggle artifacts.
+
+## Matched inference-cost measurements
+
+```bash
+python scripts/run.py benchmark-runtime \
+  source_run=/path/to/completed/base study_run=/path/to/full/feature_study \
+  data_dir=/path/to/existing/cifar_data device=cuda \
+  output_dir=outputs run_id=cost_c100_base42
+```
+
+This command measures final-probability consensus for the base, uniform TTA and
+Early-5 with fixed head seed42. View counts1/5/10 use saved validation policies,
+including each count's saved temperature. It does not choose a policy by timing
+or accuracy. Stable noisy-validation image IDs supply deterministic view prefixes;
+no clean train/test labels are accessed. The benchmark does not train models.
+
+The FP32 reference implementation shares the selected base's penultimate features
+with PCA and the scalar head on the same device. Its weighted probabilities are
+checked against the existing cached NumPy weighting formula in offline tests.
+It measures this fused inference path, not the wall time of the research cache
+extraction and offline scoring pipeline. Single-view / uniform policies skip an
+unnecessary head; this is not the cost of separately returning an error-ranking
+score for every original image.
+
+Two scopes are saved: `model_only` uses prepared device tensors;
+`with_preprocessing` includes CPU view generation, normalization and host-to-device
+transfer. Disk/model loading is outside both. Batch sizes1/4, warmup5 and30 timed
+repetitions are recorded; expanded batches cannot exceed64 views. CUDA and MPS
+are synchronized around each measurement. Report batch median/p95 separately
+from amortized milliseconds per image; batch p95 is not single-image p95.
+CUDA rows report PyTorch allocated resident/peak memory, not total GPU usage.
+CPU/MPS peak memory is left unavailable rather than approximated.
+
+Use an otherwise idle device, record hardware and CPU threads, and keep Mac and
+Kaggle measurements separate. These comparisons do not establish an advantage
+over a two-base ensemble, which needs its own matched timing experiment. Each
+independent timing run requires a fresh run ID. Outputs contain resolved config,
+metrics, hardware/precision metadata, a factual report, a compact timing CSV and
+raw timing repetitions. Real GPU measurements remain pending.
