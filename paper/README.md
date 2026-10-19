@@ -61,3 +61,6 @@ Small public CSVs are sufficient to regenerate these figures. Full run configs,
 checkpoints and caches are required for training-level reproduction, as explained
 in the Kaggle guide. Private reviews, original submission files and writing notes
 are excluded from Git.
+
+Public CSV snapshots use LF line endings; numerical values are retained from
+the imported outputs. `evidence/file_manifest.csv` records their public-file hashes.
