@@ -1,0 +1,27 @@
+\documentclass{article}
+\usepackage{icomp2026_conference,times}
+\usepackage{amsmath,amssymb,graphicx,booktabs,hyperref,url}
+\hypersetup{hidelinks}
+\makeatletter
+\patchcmd{\@maketitle}{Paper under double-blind review}{Working manuscript; venue not selected}{}{\PackageError{draft}{Title patch failed}{Check template.}}
+\makeatother
+\title{Room for Doubt: Distilling Early Training Dynamics for Inference-Time Reliability}
+\author{Anonymous authors}
+\begin{document}
+\maketitle
+\lhead{Working draft --- 19 October 2026}
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/method}
+\input{sections/protocol}
+\input{sections/results}
+\input{sections/limitations}
+\input{sections/conclusion}
+\bibliography{references}
+\bibliographystyle{icomp2026_conference}
+\appendix
+\input{sections/appendix}
+\end{document}

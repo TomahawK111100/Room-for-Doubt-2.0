@@ -11,6 +11,7 @@ model:
   weights: IMAGENET1K_V2
 image_size: 224
 seed: 42
+base_split_seed: null
 split_seed: 20261015
 epochs: 50
 batch_size: 128

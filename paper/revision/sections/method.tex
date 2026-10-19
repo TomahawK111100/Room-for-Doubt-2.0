@@ -1,0 +1,35 @@
+\section{Method}
+\label{sec:method}
+Let $\mathcal D_{\mathrm{train}}=\{(x_i,\tilde y_i)\}$ contain images and observed, potentially incorrect labels. A base classifier produces class probabilities $p_{\theta}(c\mid x)$. We select a checkpoint $\theta^*$ using noisy-validation cross entropy and freeze it for the remaining stages.
+
+\paragraph{Observed-label history.}
+For each training example we record one probability margin per epoch:
+\begin{equation}
+ m_{it}=p_{\theta_{it}}(\tilde y_i\mid a_{it}(x_i))-
+ \max_{c\ne\tilde y_i}p_{\theta_{it}}(c\mid a_{it}(x_i)),\qquad m_{it}\in[-1,1].
+\end{equation}
+Here $a_{it}$ is the training augmentation and $\theta_{it}$ denotes the weights at that example's minibatch forward pass, before its update. Thus an epoch's margins are not evaluated at one common epoch-end checkpoint. The primary scalar target is
+\begin{equation}
+ s_i^{(K)}=\frac1K\sum_{t=1}^{K}m_{it},\qquad K=5.
+\end{equation}
+All reported bases were trained for 50 epochs. Using the first five recorded margins does not imply that the base itself was trained for only five epochs.
+
+\paragraph{Class-conditioned regression.}
+Let $h_{\theta^*}(x)\in\mathbb R^{2048}$ be the base's penultimate feature vector. We fit a centered, non-whitened principal-component projection $P$ on meta-training images only and retain 512 dimensions. The estimator concatenates the projected features with a learned 32-dimensional class embedding:
+\begin{equation}
+ \hat s(x,c)=g_{\phi}\big(P(h_{\theta^*}(x)-\mu),e(c)\big).
+\end{equation}
+The regressor has a 256-unit ReLU hidden layer and a scalar linear output. It minimizes mean squared error between $\hat s(x_i,\tilde y_i)$ and $s_i^{(K)}$. Its checkpoint minimizes held-out meta-validation MSE. Each training image contributes its observed class only; there is no supervision for all possible candidate classes. At deployment we substitute the base's predicted class, which introduces a conditioning shift evaluated empirically.
+
+\paragraph{Reliability score and weighted views.}
+For a view $v$ of a test image, let $c_v=\arg\max_c p_{\theta^*}(c\mid v)$. We define
+\begin{equation}
+ B(v)=\operatorname{clip}\left(\frac{1-\hat s(v,c_v)}2,0,1\right),\quad
+ w_v=\frac{\exp(-B(v)/T)}{\sum_{u=1}^{V}\exp(-B(u)/T)},\quad
+ \bar p=\sum_{v=1}^{V}w_vp_{\theta^*}(\cdot\mid v).
+\end{equation}
+The predicted label is $\arg\max_c\bar p_c$. Higher badness indicates a smaller predicted historical margin; it is not a probability of memorization. The selected base features can be reused from the classifier's forward pass. Each view still requires a base-model evaluation, a projection, and a regressor evaluation. Uniform weighting is included as an exact alternative, rather than only approximated by a large temperature.
+
+\paragraph{Matched controls.}
+The static target is the observed-label probability margin of the selected checkpoint on the unaugmented training image. History-50 averages all 50 recorded margins. Both targets use the same scalar head, initialization seed, loss, training budget, and policy search as Early-5. A second feature condition uses frozen ImageNet ResNet18 features, also projected to 512 dimensions with train-only PCA. Comparisons within a feature condition hold the head fixed while changing target construction. Temporal and static targets also differ in augmentation and online versus evaluation-time measurement, so this is not a causal isolation of temporal information. Comparisons between feature conditions assess the representation source. The primary method uses neither a clean/noisy supervised detector nor Top-2 overrides.
+

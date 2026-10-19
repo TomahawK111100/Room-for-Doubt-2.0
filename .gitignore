@@ -90,3 +90,15 @@ aris_repo/
 !/docs/kaggle.md
 !/docs/reproduction.md
 !/docs/repository_layout.md
+
+# Manuscript archive and private review material; editable revision is public-ready
+/paper/archive/
+/paper/notes/
+/paper/revision/build/
+/paper/revision/main.pdf
+/paper/revision/*.aux
+/paper/revision/*.bbl
+/paper/revision/*.blg
+/paper/revision/*.log
+/paper/revision/*.out
+/paper/revision/*.synctex.gz

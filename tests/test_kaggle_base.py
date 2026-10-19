@@ -62,6 +62,8 @@ def test_training_resume_selects_noisy_val_and_exports_complete_targets(
     )
     cfg = OmegaConf.load(Path(__file__).parents[1] / "configs/kaggle_base.yaml")
     cfg.epochs = 2
+    cfg.seed = 43
+    cfg.base_split_seed = 42
     cfg.image_size = 8
     cfg.batch_size = 16
     cfg.num_workers = 0
@@ -78,6 +80,11 @@ def test_training_resume_selects_noisy_val_and_exports_complete_targets(
     result = train(cfg, out)
     assert result["status"] == "complete" and events.count("test_data") == 1
     with np.load(out / "artifacts/meta_targets.npz") as data:
+        from room_for_doubt.data.cifar_noisy import get_train_val_indices
+
+        expected_train, expected_val = get_train_val_indices(40, 0.1, 42)
+        assert np.array_equal(data["base_train_ids"], expected_train)
+        assert np.array_equal(data["base_val_ids"], expected_val)
         assert data["targets"].shape == (36, 2)
         assert np.isfinite(data["targets"]).all()
         assert not set(data["base_train_ids"]) & set(data["base_val_ids"])

@@ -55,7 +55,13 @@ def record_margins(margins, seen, positions, values):
     seen[positions] = True
 
 
+def base_split_seed(config):
+    value = config.get("base_split_seed")
+    return config["seed"] if value is None else int(value)
+
+
 def resume_contract(config):
+    config = dict(config, base_split_seed=base_split_seed(config))
     return {
         k: v
         for k, v in config.items()
@@ -149,7 +155,7 @@ def train(cfg, out):
     raw = cls(root, train=True, download=True)
     noisy = load_observed_labels(root, cfg.dataset.name, cfg.dataset.noisy_split)
     train_ids, val_ids = get_train_val_indices(
-        len(raw.data), cfg.dataset.val_ratio, cfg.seed
+        len(raw.data), cfg.dataset.val_ratio, base_split_seed(config)
     )
     np.savez_compressed(
         artifacts / "split_ids.npz", train_ids=train_ids, val_ids=val_ids
@@ -219,6 +225,7 @@ def train(cfg, out):
     info = dict(
         checkpoint_path=str(best_path),
         seed=cfg.seed,
+        base_split_seed=base_split_seed(config),
         dataset_split=cfg.dataset.noisy_split,
         device=str(device),
         gpu_names=[

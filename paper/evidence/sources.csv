@@ -1,0 +1,4 @@
+snapshot,source
+c100_s42,outputs/kaggle_feature_study_import_20261016
+c100_s43,outputs/kaggle_campaign_completed_import_20261019/jobs/cifar100n_seed43/feature_study
+c10_s42,outputs/kaggle_campaign_completed_import_20261019/jobs/cifar10n_seed42/feature_study

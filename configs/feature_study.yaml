@@ -1,0 +1,36 @@
+run_id: base_feature_study_seed42
+output_dir: outputs
+source_run: null
+post_run: null
+scope: standard
+data_dir: data
+dataset: null
+base_digest: null
+base_seed: null
+device: auto
+seed: 42
+seeds: [42, 43, 44]
+encoders: [resnet18, base_resnet50]
+target_modes: [early_mean, history_mean, best_margin]
+early_epochs: 5
+feature_dim: 512
+pca_seed: 20261016
+epochs: 25
+batch_size: 256
+image_batch_size: 64
+learning_rate: 0.001
+optimizer: adam
+meta_model: conditioned
+split_seed: 20261015
+inference_seed: 20261015
+validation_metric: native
+resume_path: null
+view_counts: [1, 5, 10]
+views: 10
+num_workers: 0
+temperatures: [0.02, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 1000000.0]
+max_hours: 8
+min_free_gb: 4
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}
