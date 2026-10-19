@@ -5,6 +5,7 @@ import runpy
 import sys
 
 COMMANDS = {
+    "benchmark-runtime": "analysis.runtime_cost",
     "contrast-feature-targets": "analysis.feature_contrasts",
     "study-augmentation-control": "analysis.augmentation_control",
     "run-kaggle-campaign": "analysis.kaggle_campaign",
