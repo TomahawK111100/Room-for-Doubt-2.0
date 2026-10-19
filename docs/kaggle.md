@@ -276,3 +276,73 @@ Analysis must preserve all predefined targets and report core (first5/all50/stat
 comparisons across independent bases. Do not choose a favorable window or seed by
 the already inspected CIFAR test. CIFAR10N has only one new base seed in this batch;
 CIFAR100N reaches three total base seeds only if the optional seed44 job completes.
+
+## Follow-up: direct target contrasts and an augmentation-matched static control
+
+These commands are prepared for completed feature-study Outputs. They do not
+change an already-running notebook or retrain its base. A compact summary ZIP
+alone is insufficient: preserve the full Outputs with heads, native/projected
+features, shared caches and per-view score arrays.
+
+### Direct paired comparisons (CPU; no head or base training)
+
+```bash
+python scripts/run.py contrast-feature-targets \
+  study_run=/path/to/full/feature_study \
+  post_run=/path/to/shared_cache_run \
+  output_dir=outputs run_id=paired_c100_base42
+```
+
+`post_run` is the folder containing `cache/`; omit it when the complete shared
+cache is at `study_run/shared/`. For the initial feature study with an external
+post-Kaggle Input, attach that Input and specify its path explicitly.
+
+The command compares Early-5 with Static and History-50 separately for each
+encoder and head seed, keeping each method's saved validation-selected view count
+and temperature. No policy is retuned. The accuracy interval is a 2,000-draw
+paired test-example bootstrap. The AUROC difference uses a paired stratified
+bootstrap with the same resampled examples for both scores and fixed counts of
+original-view base errors/correct examples. These are conditional, exploratory
+intervals without multiplicity correction; they do not estimate variation across
+base training runs. IDs, selected predictions, copied source scores and frozen
+policies are retained for audit. `summary_bundle.zip` contains compact tables and
+run metadata, not all resumable artifacts.
+
+### Static target under training augmentations (GPU recommended)
+
+```bash
+python scripts/run.py study-augmentation-control \
+  source_run=/path/to/completed/base \
+  study_run=/path/to/full/feature_study \
+  post_run=/path/to/shared_cache_run \
+  data_dir=/path/to/existing/cifar_data device=cuda \
+  output_dir=outputs run_id=augmented_static_c100_base42
+```
+
+The new target averages five margins from the **fixed best-validation base
+checkpoint**, evaluated on new deterministic draws from the actual base-training
+transform: `RandomCrop(32,padding=4)` with constant padding, then random horizontal
+flip, resize and ImageNet normalization. The ordinary TTA stream uses reflected
+padding and is deliberately not used to construct this target. Original
+training augmentation RNG draws were not logged; this matches their distribution,
+not their exact realizations. Only observed labels enter target construction.
+
+Only base ResNet50 features are used in this bounded control. Existing train-only
+PCA, projected features, and Early-5/History-50/Static heads are reused read-only
+or copied as small head artifacts. With three source head seeds, **nine old heads
+are reused and only three augmented-static heads are fitted** with the original
+training budget. The cache builder caps each expanded forward at 64 views and
+supports resumption. Targets and new head checkpoints carry their augmentation
+protocol and target-file digest. New policies freeze before test labels are
+loaded; every reused method must reproduce its original validation-selected
+policy. The completed run also produces direct paired target contrasts.
+
+Outputs include resolved `config.yaml`, metrics, metadata, factual report,
+training targets, head checkpoints, reconstruction/selection/contrast tables and
+`summary_bundle.zip`. Keep full Outputs for recovery. A time-budget pause is an
+incomplete run; resume with the same paths and scientific settings.
+
+This control addresses augmentation acquisition, while differences in changing
+online weights, checkpoint timing and the CE/GCE schedule remain. No improvement
+is assumed in advance. Local synthetic tests verify the execution contract;
+CIFAR results require the full saved Kaggle artifacts.

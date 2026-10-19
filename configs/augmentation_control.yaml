@@ -1,0 +1,19 @@
+run_id: augmentation_static_control
+output_dir: outputs
+study_run: null
+source_run: null
+post_run: null
+data_dir: data
+device: auto
+feature_cache_root: null
+static_target_digest: null
+augmentation_views: 5
+augmentation_seed: 20261019
+image_batch_size: 64
+bootstrap_seed: 20261019
+auroc_bootstrap_draws: 2000
+max_hours: 4
+min_free_gb: 1
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

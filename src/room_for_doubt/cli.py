@@ -5,6 +5,8 @@ import runpy
 import sys
 
 COMMANDS = {
+    "contrast-feature-targets": "analysis.feature_contrasts",
+    "study-augmentation-control": "analysis.augmentation_control",
     "run-kaggle-campaign": "analysis.kaggle_campaign",
     "study-base-features": "analysis.feature_study",
     "diagnose-kaggle": "analysis.kaggle_diagnostics",
