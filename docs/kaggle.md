@@ -385,3 +385,40 @@ over a two-base ensemble, which needs its own matched timing experiment. Each
 independent timing run requires a fresh run ID. Outputs contain resolved config,
 metrics, hardware/precision metadata, a factual report, a compact timing CSV and
 raw timing repetitions. Real GPU measurements remain pending.
+
+## Follow-ups on the two completed replications (19 October)
+
+Attach the full Outputs of both replication notebooks as Notebook Inputs:
+CIFAR-100N base44 and CIFAR-10N Worse base43. Notebook names can be ambiguous:
+the launcher identifies these exact models by checkpoint SHA256 and checks for
+complete feature arrays, heads, shared caches and per-example scores. A compact
+campaign summary is not sufficient. Raw CIFAR images and official annotations
+are linked read-only from the attached Outputs; large feature caches are not copied.
+
+With a GPU and Internet enabled, from a pinned checkout, run:
+
+```bash
+python scripts/kaggle_followups.py
+```
+
+The bounded default batch runs direct paired comparisons for both bases, then
+matched runtime measurements on both, then an augmentation-matched static
+control on both. Each stage runs in a separate process to release allocations.
+No base is retrained; only three new static heads per base are fitted. Existing
+heads/PCA/features are reused. All methods and intervals remain exploratory.
+
+Run this batch alone on its GPU during timings. T4 x2 is compatible, but these
+stages use one GPU; they do not require two GPUs for comparable base training.
+The overall six-hour budget is checked between stages; the augmentation control
+has an additional two-hour inter-stage budget per base. These are admission/check
+budgets, not a hard kill during an active fit or bootstrap. No measured wall-time
+estimate is available yet for the combined batch.
+
+Results are under `/kaggle/working/rfd_followups/`. Download
+`followup_summary.zip` for compact analysis and preserve the full Output for
+resumption. A non-complete stage is recorded explicitly; the notebook reports
+an incomplete batch rather than silently succeeding. Re-running in the same
+working directory skips completed stages after verifying the saved batch
+contract. To recover in a fresh notebook, preserve the prior full follow-up
+Output and restore it to the same writable output path before running; attaching
+a compact ZIP does not restore the new heads or target arrays.
