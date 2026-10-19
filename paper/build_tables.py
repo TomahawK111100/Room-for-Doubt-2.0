@@ -75,7 +75,7 @@ def main():
         rows.append(row)
     table('reconstruction.tex','lrrrrrr','Target & C100(42) MSE & $R^2$ & C100(43) MSE & $R^2$ & C10(42) MSE & $R^2$',rows)
     with (ROOT/'evidence/combined_results.csv').open('w') as f:
-        w=csv.DictWriter(f,fieldnames=list(long[0]));w.writeheader();w.writerows(long)
+        w=csv.DictWriter(f,fieldnames=list(long[0]),lineterminator="\n");w.writeheader();w.writerows(long)
     print('Generated 5 tables; verified policy selections and 27 aggregate rows.')
 
 if __name__=='__main__':main()
