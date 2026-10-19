@@ -51,7 +51,8 @@ def members(run, method):
 def save(fig, name):
     for ext in ("pdf", "png"):
         fig.savefig(DEST / (name + "." + ext), dpi=220, bbox_inches="tight",
-                    metadata={"Creator": "Room for Doubt / paper/build_figures.py"}
+                    metadata={"Creator": "Room for Doubt / paper/build_figures.py",
+                              "CreationDate": None, "ModDate": None}
                     if ext == "pdf" else None)
     plt.close(fig)
 
