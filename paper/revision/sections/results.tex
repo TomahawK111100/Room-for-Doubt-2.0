@@ -3,7 +3,7 @@
 Table~\ref{tab:accuracy} compares policies selected on noisy validation; Figure~\ref{fig:accuracy_gain} shows gains relative to each base. Early-5 with base features raises CIFAR-100N accuracy from 70.12\% to 71.08\% on base seed 42 and from 69.23\% to 70.28\% on base seed 43. On CIFAR-10N Worse, it raises accuracy from 88.84\% to 90.16\%; uniform TTA obtains 89.29\%. All three Early-5 heads within each base have positive nominal paired gain intervals relative to that base (Appendix~\ref{app:intervals}). These repetitions distinguish a gain on two CIFAR-100N base initializations from three heads fitted to one base.
 \begin{table}[t]
 \centering\small
-\caption{Test accuracy (\%). Parentheses in column headings identify base seeds. Mean $\pm$ sample standard deviation is over three head initializations on the same base; static scores have no head-seed variation. Each method selects its own view budget and temperature on noisy validation.}
+\caption{Test accuracy (\%). Parentheses in column headings identify base seeds. Mean $\pm$ sample standard deviation is over three head initializations on the same base; non-learned weighting scores have no head-seed variation. Each method selects its own view budget and temperature on noisy validation.}
 \label{tab:accuracy}
 \input{tables/accuracy}
 \end{table}
