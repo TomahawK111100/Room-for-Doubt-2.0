@@ -1,0 +1,7 @@
+defaults:
+  - feature_study
+  - _self_
+run_id: expanded_feature_study_seed42
+scope: extended
+target_modes: [early_mean_2, early_mean, early_mean_10, early_mean_20, history_mean, late_mean_5, best_margin]
+max_hours: 1.5

@@ -1,0 +1,18 @@
+run_id: replication_cifar100
+output_dir: /kaggle/working/rfd_campaign
+data_dir: /kaggle/working/rfd_campaign_data
+source_run: null
+post_run: null
+dataset: null
+max_hours: 4.5
+minimum_start_hours: 2.5
+base_max_hours: 3.5
+min_free_gb: 6
+base_split_seed: 42
+jobs:
+- dataset: cifar100n
+  seed: 44
+  optional: false
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

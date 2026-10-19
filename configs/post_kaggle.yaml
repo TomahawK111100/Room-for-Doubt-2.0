@@ -1,0 +1,30 @@
+run_id: post_kaggle_resnet50_seed42
+output_dir: outputs
+source_run: null
+data_dir: data
+stage: all
+device: auto
+seeds: [42, 43, 44]
+modes: [mean, full]
+seed: 42
+split_seed: 20261015
+epochs: 25
+batch_size: 256
+image_batch_size: 4
+num_workers: 0
+min_free_gb: 4
+learning_rate: 0.001
+optimizer: adam
+meta_model: conditioned
+resume_path: null
+validation_metric: native
+validation_flow_samples: 5
+validation_flow_steps: 10
+flow_samples: 5
+flow_steps: 10
+inference_seed: 20261015
+views: 20
+temperatures: [0.02, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 1000000.0]
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

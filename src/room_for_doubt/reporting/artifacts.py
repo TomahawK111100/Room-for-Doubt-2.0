@@ -70,3 +70,11 @@ def generate_report(output_dir, run_id, config, metrics, metadata=None, notes=No
             if path != md:
                 f.write(f"- `{path.name}{'/' if path.is_dir() else ''}`\n")
         f.write(f"\n## Notes\n\n{notes or 'No run notes recorded.'}\n")
+
+
+def write_csv(path, rows):
+    """Write a compact table without importing experiment runners."""
+    with Path(path).open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)

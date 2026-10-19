@@ -1,0 +1,42 @@
+\section{Per-head Paired Intervals}
+\label{app:intervals}
+Table~\ref{tab:intervals} reports nominal 95\% paired test-example intervals for the primary Early-5 base-feature estimator. Gains and bounds are percentage points. The TTA reference in each interval uses the same view count as that head, which can differ from the globally validation-selected uniform-TTA policy in Table~\ref{tab:accuracy}. No interval here compares independently sampled datasets or directly tests Early-5 against the static regressor.
+\begin{table}[!ht]
+\centering\scriptsize
+\caption{Primary estimator: saved validation-selected policies and conditional paired intervals.}
+\label{tab:intervals}
+\input{tables/intervals}
+\end{table}
+
+\clearpage
+\section{Calibration and Error Ranking}
+\label{app:calibration}
+AUROC uses original-view scores and fixed original-view base-error labels. ECE, NLL, and Brier use the final probabilities of each method's selected policy. Therefore the ranking and calibration columns refer to explicitly different evaluation objects. Figure~\ref{fig:calibration_changes} shows changes relative to the corresponding base. All values for learned heads are arithmetic means over three head seeds; no seed is chosen by test performance.
+\begin{table}[!ht]
+\centering\scriptsize
+\caption{Error AUROC and final-probability calibration. Lower ECE, NLL, and Brier are better.}
+\label{tab:calibration}
+\input{tables/reliability}
+\end{table}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=\linewidth]{figures/calibration_changes.pdf}
+\caption{Change in final-probability calibration relative to the corresponding base. Points average learned heads where applicable. Positive values mean worse ECE or NLL. These are point estimates, not confidence intervals; methods use their own validation-selected policies.}
+\label{fig:calibration_changes}
+\end{figure}
+
+\section{Reconstruction of the Regression Targets}
+Table~\ref{tab:reconstruction} measures prediction of the corresponding scalar target on the 6,750 diagnostic IDs excluded from PCA fitting, head fitting, and head checkpoint selection. These images were seen by the base during its training. The static target is reconstructed more accurately than Early-5 despite its lower downstream accuracy; target reconstruction and usefulness for inference are distinct properties. Values are averaged over three head seeds, separately for each base.
+\begin{table}[!ht]
+\centering\small
+\caption{Diagnostic-held-out target reconstruction using base features. $R^2$ is relative to each target's own variance; it is not error-detection AUROC.}
+\label{tab:reconstruction}
+\input{tables/reconstruction}
+\end{table}
+
+\section{Reproducibility Details}
+The regressor's scalar output is internally broadcast to 50 entries for compatibility with the existing trajectory-prediction interface. MSE over this repeated target is mathematically the same scalar regression objective; it does not train 50 independent outputs. Stable sample IDs link trajectories, features, annotations, and views. PCA is fitted separately for each encoder using only meta-training features. The ResNet18 condition retains all 512 dimensions without whitening; the base-feature condition reduces 2048 dimensions to 512.
+
+The observed-label static target uses an unaugmented forward pass at the selected checkpoint, while temporal targets use training-time augmentations and changing weights. The matched comparison holds the head and decision procedure fixed, but target construction differs in both temporal information and measurement conditions. A fixed-checkpoint target averaged over the same augmentation process would further separate those contributions.
+

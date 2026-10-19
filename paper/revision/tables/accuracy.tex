@@ -1,0 +1,15 @@
+\begin{tabular}{lccc}
+\toprule
+Method & C100 (42) & C100 (43) & C10 Worse (42) \\
+\midrule
+Base & 70.12 & 69.23 & 88.84 \\
+Uniform TTA & 70.15 & 69.26 & 89.29 \\
+MSP weighting & 70.15 & 69.26 & 89.27 \\
+Gap weighting & 70.15 & 69.23 & 89.27 \\
+Entropy weighting & 70.15 & 69.26 & 89.30 \\
+Early-5, ResNet18 & 70.41 $\pm$ 0.12 & 69.32 $\pm$ 0.09 & 90.01 $\pm$ 0.17 \\
+Static, base features & 70.35 $\pm$ 0.10 & 69.27 $\pm$ 0.01 & 89.19 $\pm$ 0.13 \\
+History-50, base features & 70.46 $\pm$ 0.18 & 69.93 $\pm$ 0.09 & 89.01 $\pm$ 0.31 \\
+Early-5, base features & 71.08 $\pm$ 0.24 & 70.28 $\pm$ 0.13 & 90.16 $\pm$ 0.02 \\
+\bottomrule
+\end{tabular}

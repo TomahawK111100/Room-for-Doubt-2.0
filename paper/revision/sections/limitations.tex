@@ -1,0 +1,10 @@
+\section{Limitations}
+\paragraph{Replication and adaptive development.}
+The current evidence covers one base architecture with ImageNet initialization, two human-noise datasets, and only three completed base runs. Head-seed standard deviations are not estimates of base-training variance. Repeated test inspection and the exploratory window study limit confirmatory interpretation of the nominal intervals. Larger natural-image datasets, additional noise conditions, and clean-training controls have not yet been evaluated with this revised estimator.
+
+\paragraph{Mechanism and supervision shift.}
+The first-five-epoch target overlaps the cross-entropy warmup, and all selected base checkpoints come from epoch 2. The experiments do not separate early-learning information from the loss transition or checkpoint timing. Regression sees observed classes on base-training images; inference conditions on predicted classes of new views. The resulting score is useful empirically but has no calibration guarantee as a probability of error or annotation corruption. Full-history averaging also discards temporal order, so its comparison with Early-5 does not test every way of representing a complete trajectory.
+
+\paragraph{Baselines and cost.}
+The two-base ensemble has higher CIFAR-100N accuracy, and its two forward passes cannot be equated with our five or ten views. Direct learned view aggregation, alternative robust-training recipes, and matched latency measurements remain necessary to establish the breadth and computational value of the approach. Calibration also remains a separate issue: better error ranking and accuracy coexist with worse CIFAR-100N probability calibration.
+

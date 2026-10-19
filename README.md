@@ -2,29 +2,86 @@
 
 Distilling training dynamics for inference-time uncertainty estimation.
 
-The project records a classifier's per-example margin history, predicts that
-history from an image and candidate class, and uses the predicted trajectory to
-score reliability at inference. Downstream actions include Top-2 correction and
-uncertainty-weighted test-time augmentation.
+The project studies whether a classifier's training dynamics can be distilled
+into a reliability signal for new images. The current estimator predicts an
+**early probability-margin summary** from an image and candidate class, then
+uses that score to rank base-model errors and weight test-time augmentations.
 
-## Current runnable experiment
+## Current evidence
 
-The Kaggle entry point trains a stronger **CIFAR-100N** base classifier:
+The current exploratory study uses ImageNet-initialized ResNet50 bases trained
+for 50 epochs on official CIFAR-N noisy labels. Checkpoints are selected by
+minimum noisy-validation cross entropy. A class-conditioned scalar head predicts
+the mean margin over the first five epochs (**Early-5**) from frozen base features.
 
-- ResNet-50 with torchvision ImageNet-1K V2 initialization, 224-pixel inputs;
-- 50 epochs, cross-entropy warmup then generalized cross entropy;
-- official observed CIFAR-100N labels; fixed 45k/5k train/validation split;
-- best checkpoint selected by minimum noisy-validation cross entropy;
-- clean test evaluated after selection, once at the end of the run;
-- complete 50-epoch probability-margin trajectories for later distillation;
-- mixed precision, both GPUs through DataParallel, resumable epoch checkpoints.
+| Dataset / base initialization | Base accuracy | Uniform TTA | Early-5 | Gain over base |
+|---|---:|---:|---:|---:|
+| CIFAR-100N / 42 | 70.12% | 70.15% | 71.08% | +0.96 pp |
+| CIFAR-100N / 43 | 69.23% | 69.26% | 70.28% | +1.05 pp |
+| CIFAR-10N Worse / 42 | 88.84% | 89.29% | 90.16% | +1.32 pp |
 
-This is a new pretrained base-model experiment. It does not establish an
-improvement from dynamics distillation, and **70% accuracy is a target, not a
-guarantee**. The new base requires its own meta heads and evaluation adapter;
-historical ResNet-34 checkpoints and preprocessing are not interchangeable.
+Early-5 values average three head initializations **within each base**. Those
+heads are not three independent base-training runs. Each method selects its own
+view count and temperature using noisy validation. Test results have been
+inspected during development and remain exploratory; further replications are
+pending. Uniform TTA uses ten selected views; Early-5 selects five on CIFAR-100N
+and ten on CIFAR-10N. Accuracy is downstream FP32 evaluation throughout.
 
-See [Kaggle setup and launch](docs/kaggle.md).
+![Accuracy gain on completed bases](paper/revision/figures/accuracy_gain.png)
+
+Large dots show head means; small dots show individual heads; error bars are
+sample standard deviations across heads, not confidence intervals across bases.
+The uniform-TTA point has no learned head.
+
+Early-5 improves original-view base-error AUROC, but worsens ECE and NLL on
+CIFAR-100N. A two-base CIFAR-100N ensemble reaches **73.01%**, above the weighted
+single-base results. No superiority over ensembles or lower inference latency is
+claimed. Static and temporal target construction also differs in augmentation
+and measurement conditions; the target comparison does not isolate a causal
+benefit from time alone.
+
+[Editable manuscript, compact evidence and figure generation](paper/README.md).
+All displayed figures and tables can be regenerated without training or weights.
+
+## How the project evolved
+
+The original ICOMP study explored full-trajectory regression / conditional flow
+matching, a downstream LDA or random-forest detector, Top-2 correction and
+uncertainty-weighted TTA. That implementation remains available in the research
+package. Historical ResNet34 results and checkpoints are not interchangeable
+with the current ResNet50 experiment.
+
+The shared idea is **distilling learning dynamics for inference-time reliability**.
+Early-5 is the current, simpler evidence-backed variant: it predicts one scalar,
+reuses the selected base's features, and needs neither clean/noisy detector
+supervision nor a Top-2 override. A weaker full-history mean does not demonstrate
+that every full-trajectory representation is unhelpful. Previous trajectories,
+CFM and correction remain research alternatives; their old numbers are not
+combined with the new results as one matched evaluation.
+
+## Runnable pipeline
+
+See [Kaggle setup and launch](docs/kaggle.md) for one-cell packaging, required
+Inputs, independent-base campaigns, checkpoint recovery and memory bounds.
+
+- `python scripts/run.py train-kaggle-base`: train a resumable ResNet50 base and
+  record 50-epoch probability margins with stable sample IDs.
+- `python scripts/run.py post-kaggle source_run=/path/to/base`: fit new meta heads
+  and compare base / shared-view TTA / static scores / trajectory predictors.
+- `python scripts/run.py diagnose-kaggle source_run=/path/to/base post_run=/path/to/post`:
+  inspect saved caches, scalar controls, reconstruction and numerical consistency.
+- `python scripts/run.py study-base-features source_run=/path/to/base post_run=/path/to/post`:
+  compare matched static, early and full-history-mean heads on ResNet18 and base
+  features, with train-only PCA and noisy-validation policy selection.
+- `python scripts/run.py run-kaggle-campaign`: run bounded independent-base jobs;
+  dataset-specific profiles and their launchers are documented in the Kaggle guide.
+
+No base retraining is needed to regenerate the manuscript plots:
+
+```bash
+python paper/build_tables.py
+python paper/build_figures.py
+```
 
 ## Local installation
 
@@ -54,7 +111,7 @@ src/room_for_doubt/
   models/                Base classifiers and trajectory predictors
   training/              Base and meta-model training
   dynamics/              Trajectory formats
-  inference/             Flow sampling
+  inference/             Frozen features, shared-view caches and flow sampling
   evaluation/            Metrics and inference-time policies
   analysis/              Matched comparisons and bounded studies
   reporting/             Per-run configuration, metrics and reports
@@ -75,7 +132,9 @@ local. Every new run still creates `config.yaml`, `metrics.json`,
 ## Protocol
 
 Use noisy training labels for training and noisy validation for checkpoint and
-policy selection. Use clean test labels only for final evaluation. Any clean
+policy selection. Use clean test labels for evaluation, never for fitting or
+policy tuning. The existing test inspections during development are disclosed
+in the manuscript as exploratory. Any clean
 training-label detector supervision must be labeled **oracle**. Preserve stable
 sample IDs, disjoint splits, explicit epoch indices, and record incomplete runs
 rather than filling missing trajectories with zero.

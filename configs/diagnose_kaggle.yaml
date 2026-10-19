@@ -1,0 +1,29 @@
+run_id: diagnostic_resnet50_seed42
+output_dir: outputs
+source_run: null
+post_run: null
+data_dir: data
+dataset: null
+base_digest: null
+device: auto
+seed: 42
+seeds: [42, 43, 44]
+control_modes: [best_margin, last_margin, early_mean]
+early_epochs: 5
+view_counts: [1, 5, 10, 20]
+epochs: 25
+batch_size: 256
+image_batch_size: 64
+learning_rate: 0.001
+optimizer: adam
+meta_model: conditioned
+split_seed: 20261015
+inference_seed: 20261015
+validation_metric: native
+resume_path: null
+temperatures: [0.02, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 1000000.0]
+max_hours: 8
+min_free_gb: 2
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

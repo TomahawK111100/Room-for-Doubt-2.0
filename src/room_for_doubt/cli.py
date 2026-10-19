@@ -5,6 +5,11 @@ import runpy
 import sys
 
 COMMANDS = {
+    "run-kaggle-campaign": "analysis.kaggle_campaign",
+    "study-base-features": "analysis.feature_study",
+    "diagnose-kaggle": "analysis.kaggle_diagnostics",
+    "post-kaggle": "analysis.post_kaggle",
+    "ablate-targets": "analysis.target_ablation",
     "train-kaggle-base": "training.kaggle_base",
     "study-architectures": "analysis.architecture_study",
     "diagnose-confidence": "analysis.confidence_diagnostic",
@@ -35,7 +40,7 @@ COMMANDS = {
 def main():
     parser = argparse.ArgumentParser(
         description="Room for Doubt research commands. Run from the repository root.",
-        epilog="Pass --help after a command for its options. See docs/protocol.md for historical limitations.",
+        epilog="Pass --help after a command for its options. See docs/reproduction.md for reproduction requirements.",
     )
     parser.add_argument("command", choices=COMMANDS)
     parser.add_argument("arguments", nargs=argparse.REMAINDER)

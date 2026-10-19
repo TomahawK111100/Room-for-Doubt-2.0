@@ -1,0 +1,24 @@
+\begin{tabular}{llrrrr}
+\toprule
+Run & Method & AUROC $\uparrow$ & ECE $\downarrow$ & NLL $\downarrow$ & Brier $\downarrow$ \\
+\midrule
+C100, base 42 & Base & 0.8124 & 0.1200 & 1.1253 & 0.4362 \\
+C100, base 42 & Uniform TTA & 0.8124 & 0.1610 & 1.1670 & 0.4500 \\
+C100, base 42 & Entropy weighting & 0.7647 & 0.1610 & 1.1670 & 0.4500 \\
+C100, base 42 & Static & 0.8045 & 0.1554 & 1.1587 & 0.4465 \\
+C100, base 42 & History-50 & 0.7112 & 0.1459 & 1.1570 & 0.4434 \\
+C100, base 42 & Early-5 & 0.8307 & 0.1291 & 1.1404 & 0.4348 \\
+C100, base 43 & Base & 0.8222 & 0.0963 & 1.1313 & 0.4358 \\
+C100, base 43 & Uniform TTA & 0.8222 & 0.1436 & 1.1814 & 0.4503 \\
+C100, base 43 & Entropy weighting & 0.7799 & 0.1436 & 1.1814 & 0.4503 \\
+C100, base 43 & Static & 0.7984 & 0.1433 & 1.1810 & 0.4501 \\
+C100, base 43 & History-50 & 0.6953 & 0.1335 & 1.1707 & 0.4434 \\
+C100, base 43 & Early-5 & 0.8326 & 0.1098 & 1.1541 & 0.4363 \\
+C10 Worse, base 42 & Base & 0.8764 & 0.2847 & 0.6203 & 0.2677 \\
+C10 Worse, base 42 & Uniform TTA & 0.8764 & 0.3155 & 0.6532 & 0.2841 \\
+C10 Worse, base 42 & Entropy weighting & 0.8048 & 0.2464 & 0.5601 & 0.2373 \\
+C10 Worse, base 42 & Static & 0.8853 & 0.3033 & 0.6382 & 0.2757 \\
+C10 Worse, base 42 & History-50 & 0.7689 & 0.2888 & 0.6260 & 0.2687 \\
+C10 Worse, base 42 & Early-5 & 0.9064 & 0.2756 & 0.5903 & 0.2481 \\
+\bottomrule
+\end{tabular}
