@@ -18,6 +18,11 @@ from room_for_doubt.utils.reproducibility import set_seed
 
 
 def target_values(data, best_margin, mode, early_epochs):
+    if mode == "best_augmented_mean":
+        scalar = np.asarray(data["static_augmented_margin"])
+        if scalar.shape != (len(data["sample_ids"]),) or not np.isfinite(scalar).all():
+            raise ValueError("Invalid augmented static target")
+        return np.repeat(scalar[:, None], 50, axis=1).astype("float32")
     windows = {
         "early_mean_2": (0, 2),
         "early_mean_10": (0, 10),
@@ -51,6 +56,10 @@ def verify_config(saved, cfg, encoder, mode, seed):
     ).items():
         if saved.get(key) != value:
             raise ValueError("Feature-head scientific config differs: " + key)
+    if mode == "best_augmented_mean":
+        for key in ("augmentation_views", "augmentation_seed", "static_target_digest"):
+            if saved.get(key) != cfg[key]:
+                raise ValueError("Augmented target scientific config differs: " + key)
 
 
 def load_feature_head(cfg, out, encoder, mode, seed, device):
@@ -86,7 +95,9 @@ def train_feature_head(
     local = OmegaConf.create(OmegaConf.to_container(cfg, resolve=True))
     local.seed, local.encoder, local.target_mode = int(seed), encoder, mode
     local.target_path = str(Path(out) / "artifacts/training_targets.npz")
-    local.cache_path = str(Path(out) / "projected" / encoder)
+    local.cache_path = str(
+        Path(cfg.get("feature_cache_root", Path(out) / "projected")) / encoder
+    )
     last = run / "checkpoints/last.pt"
     if last.exists():
         saved = torch.load(last, map_location="cpu", weights_only=False)

@@ -38,12 +38,12 @@ from room_for_doubt.reporting.artifacts import (
 from room_for_doubt.utils.paths import config_directory
 
 
-def export(out, cfg, metrics, metadata):
+def export(out, cfg, metrics, metadata, notes=None):
     out = Path(out)
     config = OmegaConf.to_container(cfg, resolve=True)
     save_metrics(out, metrics)
     save_run_metadata(out, cfg.run_id, config, **metadata)
-    notes = (
+    notes = notes or (
         f"Fixed exploratory {len(cfg.encoders)}-encoder x {len(cfg.target_modes)}-target x {len(cfg.seeds)}-meta-seed study. "
         "Both encoders use the same PCA output dimension, scalar MLP, optimizer, fitting partitions and epoch budget. "
         "PCA is fitted only on meta-training images without labels, without whitening; native dimensions and retained variance are reported. "

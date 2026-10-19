@@ -1,0 +1,9 @@
+run_id: paired_feature_targets
+output_dir: outputs
+study_run: null
+post_run: null
+bootstrap_seed: 20261019
+auroc_bootstrap_draws: 2000
+hydra:
+  run:
+    dir: ${output_dir}/${run_id}

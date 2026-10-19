@@ -76,6 +76,19 @@ Inputs, independent-base campaigns, checkpoint recovery and memory bounds.
 - `python scripts/run.py run-kaggle-campaign`: run bounded independent-base jobs;
   dataset-specific profiles and their launchers are documented in the Kaggle guide.
 
+Two follow-up commands are implemented and locally validated; their real-data
+results are still pending:
+
+- `python scripts/run.py contrast-feature-targets study_run=/path/to/full/study`:
+  direct paired Early-5 versus Static/History-50 accuracy and AUROC comparisons,
+  using the saved validation-selected policies and per-example predictions.
+- `python scripts/run.py study-augmentation-control source_run=/path/to/base study_run=/path/to/full/study`:
+  construct a static target under the actual training augmentation distribution,
+  reuse existing features/PCA/heads, and fit only the new static heads.
+
+Both require full Outputs, not just compact summaries. For external shared caches,
+pass `post_run`; see the [follow-up instructions](docs/kaggle.md#follow-up-direct-target-contrasts-and-an-augmentation-matched-static-control).
+
 No base retraining is needed to regenerate the manuscript plots:
 
 ```bash
