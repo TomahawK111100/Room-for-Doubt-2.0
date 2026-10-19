@@ -14,12 +14,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
+from study_runs import RUNS
 
 ROOT = Path(__file__).resolve().parent
 DEST = ROOT / "revision" / "figures"
-RUNS = [("c100_s42", "CIFAR-100N / base 42"),
-        ("c100_s43", "CIFAR-100N / base 43"),
-        ("c10_s42", "CIFAR-10N Worse / base 42")]
+
 METHODS = [("tta", "Uniform TTA", "#777777"),
            ("base_resnet50__best_margin", "Static target", "#D89022"),
            ("base_resnet50__history_mean", "History-50", "#8D68A6"),
@@ -64,7 +63,7 @@ def style(ax, axis="x"):
 
 
 def accuracy_gain():
-    fig, ax = plt.subplots(figsize=(7.2, 4.4), layout="constrained")
+    fig, ax = plt.subplots(figsize=(7.2, 5.6), layout="constrained")
     for k, (method, label, color) in enumerate(METHODS):
         for i, (run, _) in enumerate(RUNS):
             base = float(next(r for r in read(run, "aggregate")
@@ -79,11 +78,11 @@ def accuracy_gain():
                 ax.scatter(vals, y + np.array([-.035, 0, .035]), s=10,
                            color=color, alpha=.5, zorder=2)
     ax.axvline(0, color="#30343B", linewidth=.9)
-    ax.set_yticks(range(3), [label for _, label in RUNS])
-    ax.set_ylim(2.55, -.65)
-    ax.set_xlim(-.6, 2.0)
+    ax.set_yticks(range(len(RUNS)), [label for _, label in RUNS])
+    ax.set_ylim(len(RUNS) - .45, -.65)
+    ax.set_xlim(-.6, 2.1)
     ax.set_xlabel("Test accuracy gain over the same base (percentage points)")
-    ax.set_title("Validation-selected policies on three completed bases", loc="left")
+    ax.set_title("Validation-selected policies on five completed bases", loc="left")
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, ncol=4, frameon=False,
                loc="outside upper center", fontsize=8)
@@ -118,7 +117,7 @@ def history_windows():
 
 
 def calibration_changes():
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.25), sharey=True, layout="constrained")
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 4.7), sharey=True, layout="constrained")
     for ax, key, title in zip(axes, ["ece", "nll"], ["Change in ECE", "Change in NLL"]):
         for k, (method, label, color) in enumerate(METHODS):
             for i, (run, _) in enumerate(RUNS):
@@ -130,8 +129,8 @@ def calibration_changes():
         ax.set_title(title, loc="left")
         ax.set_xlabel("Difference from base (lower is better)")
         style(ax)
-    axes[0].set_yticks(range(3), ["C100 / base 42", "C100 / base 43", "C10 Worse / base 42"])
-    axes[0].set_ylim(2.5, -.55)
+    axes[0].set_yticks(range(len(RUNS)), [title for _, title in RUNS])
+    axes[0].set_ylim(len(RUNS) - .5, -.55)
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="outside upper center", ncol=4, frameon=False, fontsize=8)
     save(fig, "calibration_changes")
