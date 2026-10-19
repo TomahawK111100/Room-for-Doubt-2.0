@@ -2,9 +2,10 @@
 import csv
 import statistics
 from pathlib import Path
+from study_runs import RUNS
 
 ROOT = Path(__file__).resolve().parent
-RUNS = [('c100_s42', 'C100, base 42'), ('c100_s43', 'C100, base 43'), ('c10_s42', 'C10 Worse, base 42')]
+
 METHODS = [('base','Base'), ('tta','Uniform TTA'), ('msp','MSP weighting'), ('gap','Gap weighting'), ('entropy','Entropy weighting'), ('resnet18__early_mean','Early-5, ResNet18'), ('base_resnet50__best_margin','Static, base features'), ('base_resnet50__history_mean','History-50, base features'), ('base_resnet50__early_mean','Early-5, base features')]
 
 def read(run, name):
@@ -36,14 +37,18 @@ def main():
             long.append(row)
         tables[run] = aggregate
     rows=[]
-    for method,label in METHODS:
-        cells=[label]
-        for run,_ in RUNS:
-            r=tables[run][method];value=f"{100*float(r['acc']):.2f}"
-            if int(r['n_meta_seeds']):value+=f" $\\pm$ {100*float(r['acc_sd']):.2f}"
-            cells.append(value)
-        rows.append(cells)
-    table('accuracy.tex','lccc','Method & C100 (42) & C100 (43) & C10 Worse (42)',rows)
+    for prefix, dataset in [("c100_", "CIFAR-100N"), ("c10_", "CIFAR-10N Worse")]:
+        group = [(run, title) for run, title in RUNS if run.startswith(prefix)]
+        rows.append([r"\multicolumn{4}{l}{\textbf{" + dataset + "}}"])
+        rows.append(["Method"] + ["Base " + run.split("s")[-1] for run, _ in group] + [""] * (3-len(group)))
+        for method,label in METHODS:
+            cells=[label]
+            for run,_ in group:
+                r=tables[run][method]; value=f"{100*float(r['acc']):.2f}"
+                if int(r['n_meta_seeds']): value+=f" $\\pm$ {100*float(r['acc_sd']):.2f}"
+                cells.append(value)
+            rows.append(cells + [""] * (3-len(group)))
+    table('accuracy.tex','lrrr',r'Method / dataset & \multicolumn{3}{c}{Base initialization}',rows)
     rows=[]
     for run,title in RUNS:
         for method in ['base','tta','entropy','base_resnet50__best_margin','base_resnet50__history_mean','base_resnet50__early_mean']:
@@ -66,16 +71,14 @@ def main():
         rows.append(row)
     table('windows.tex','lrrrr','Target & R18 acc. & R18 AUROC & Base acc. & Base AUROC',rows)
     rows=[]
-    for target,label in [('early_mean','Early-5'),('best_margin','Static'),('history_mean','History-50')]:
-        row=[label]
-        for run,_ in RUNS:
+    for run,title in RUNS:
+        for target,label in [('early_mean','Early-5'),('best_margin','Static'),('history_mean','History-50')]:
             rec=[r for r in read(run,'reconstruction') if r['encoder']=='base_resnet50' and r['target']==target and r['partition']=='detector_eval']
             assert len(rec)==3 and all(int(r['samples'])==6750 for r in rec)
-            row.extend([f"{statistics.mean(float(r['mse']) for r in rec):.4f}",f"{statistics.mean(float(r['r2']) for r in rec):.3f}"])
-        rows.append(row)
-    table('reconstruction.tex','lrrrrrr','Target & C100(42) MSE & $R^2$ & C100(43) MSE & $R^2$ & C10(42) MSE & $R^2$',rows)
+            rows.append([title,label,f"{statistics.mean(float(r['mse']) for r in rec):.4f}",f"{statistics.mean(float(r['r2']) for r in rec):.3f}"])
+    table('reconstruction.tex','llrr','Run & Target & MSE & $R^2$',rows)
     with (ROOT/'evidence/combined_results.csv').open('w') as f:
         w=csv.DictWriter(f,fieldnames=list(long[0]),lineterminator="\n");w.writeheader();w.writerows(long)
-    print('Generated 5 tables; verified policy selections and 27 aggregate rows.')
+    print(f'Generated 5 tables; verified {len(RUNS)} bases and {len(long)} aggregate rows.')
 
 if __name__=='__main__':main()

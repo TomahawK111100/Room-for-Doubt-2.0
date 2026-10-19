@@ -18,14 +18,19 @@ the mean margin over the first five epochs (**Early-5**) from frozen base featur
 |---|---:|---:|---:|---:|
 | CIFAR-100N / 42 | 70.12% | 70.15% | 71.08% | +0.96 pp |
 | CIFAR-100N / 43 | 69.23% | 69.26% | 70.28% | +1.05 pp |
+| CIFAR-100N / 44 | 69.57% | 69.57% | 70.09% | +0.52 pp |
 | CIFAR-10N Worse / 42 | 88.84% | 89.29% | 90.16% | +1.32 pp |
+| CIFAR-10N Worse / 43 | 89.63% | 90.52% | 91.28% | +1.65 pp |
 
 Early-5 values average three head initializations **within each base**. Those
 heads are not three independent base-training runs. Each method selects its own
 view count and temperature using noisy validation. Test results have been
 inspected during development and remain exploratory; further replications are
-pending. Uniform TTA uses ten selected views; Early-5 selects five on CIFAR-100N
-and ten on CIFAR-10N. Accuracy is downstream FP32 evaluation throughout.
+pending. Uniform TTA selects ten views on four bases and one on CIFAR-100N seed44;
+Early-5 selects five or ten depending on the base and head. Accuracy is downstream
+FP32 evaluation throughout. Across independent bases, mean gains over base are
++0.84 pp (CIFAR-100N, n=3) and +1.49 pp (CIFAR-10N Worse, n=2). Between-base
+sample SDs of these gains are 0.28 and 0.23 pp, not confidence intervals.
 
 ![Accuracy gain on completed bases](paper/revision/figures/accuracy_gain.png)
 
@@ -34,7 +39,8 @@ sample standard deviations across heads, not confidence intervals across bases.
 The uniform-TTA point has no learned head.
 
 Early-5 improves original-view base-error AUROC, but worsens ECE and NLL on
-CIFAR-100N. A two-base CIFAR-100N ensemble reaches **73.01%**, above the weighted
+all three CIFAR-100N bases; CIFAR-10N ECE changes direction across bases.
+One new CIFAR-100N head has a paired gain interval including zero against base. A two-base CIFAR-100N ensemble reaches **73.01%**, above the weighted
 single-base results. No superiority over ensembles or lower inference latency is
 claimed. Static and temporal target construction also differs in augmentation
 and measurement conditions; the target comparison does not isolate a causal

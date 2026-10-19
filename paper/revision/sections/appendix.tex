@@ -26,8 +26,9 @@ AUROC uses original-view scores and fixed original-view base-error labels. ECE, 
 \label{fig:calibration_changes}
 \end{figure}
 
+\clearpage
 \section{Reconstruction of the Regression Targets}
-Table~\ref{tab:reconstruction} measures prediction of the corresponding scalar target on the 6,750 diagnostic IDs excluded from PCA fitting, head fitting, and head checkpoint selection. These images were seen by the base during its training. The static target is reconstructed more accurately than Early-5 despite its lower downstream accuracy; target reconstruction and usefulness for inference are distinct properties. Values are averaged over three head seeds, separately for each base.
+Table~\ref{tab:reconstruction} measures prediction of the corresponding scalar target on the 6,750 diagnostic IDs excluded from PCA fitting, head fitting, and head checkpoint selection. These images were seen by the base during its training. The static target has higher $R^2$ than Early-5 on every base despite lower downstream accuracy. Absolute MSE values refer to different target distributions and should not be read as a common-scale ranking of usefulness. Values are averaged over three head seeds, separately for each base.
 \begin{table}[!ht]
 \centering\small
 \caption{Diagnostic-held-out target reconstruction using base features. $R^2$ is relative to each target's own variance; it is not error-detection AUROC.}

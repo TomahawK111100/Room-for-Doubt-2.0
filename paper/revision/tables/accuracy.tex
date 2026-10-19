@@ -1,15 +1,28 @@
-\begin{tabular}{lccc}
+\begin{tabular}{lrrr}
 \toprule
-Method & C100 (42) & C100 (43) & C10 Worse (42) \\
+Method / dataset & \multicolumn{3}{c}{Base initialization} \\
 \midrule
-Base & 70.12 & 69.23 & 88.84 \\
-Uniform TTA & 70.15 & 69.26 & 89.29 \\
-MSP weighting & 70.15 & 69.26 & 89.27 \\
-Gap weighting & 70.15 & 69.23 & 89.27 \\
-Entropy weighting & 70.15 & 69.26 & 89.30 \\
-Early-5, ResNet18 & 70.41 $\pm$ 0.12 & 69.32 $\pm$ 0.09 & 90.01 $\pm$ 0.17 \\
-Static, base features & 70.35 $\pm$ 0.10 & 69.27 $\pm$ 0.01 & 89.19 $\pm$ 0.13 \\
-History-50, base features & 70.46 $\pm$ 0.18 & 69.93 $\pm$ 0.09 & 89.01 $\pm$ 0.31 \\
-Early-5, base features & 71.08 $\pm$ 0.24 & 70.28 $\pm$ 0.13 & 90.16 $\pm$ 0.02 \\
+\multicolumn{4}{l}{\textbf{CIFAR-100N}} \\
+Method & Base 42 & Base 43 & Base 44 \\
+Base & 70.12 & 69.23 & 69.57 \\
+Uniform TTA & 70.15 & 69.26 & 69.57 \\
+MSP weighting & 70.15 & 69.26 & 69.57 \\
+Gap weighting & 70.15 & 69.23 & 69.57 \\
+Entropy weighting & 70.15 & 69.26 & 69.57 \\
+Early-5, ResNet18 & 70.41 $\pm$ 0.12 & 69.32 $\pm$ 0.09 & 69.33 $\pm$ 0.13 \\
+Static, base features & 70.35 $\pm$ 0.10 & 69.27 $\pm$ 0.01 & 69.57 $\pm$ 0.00 \\
+History-50, base features & 70.46 $\pm$ 0.18 & 69.93 $\pm$ 0.09 & 69.68 $\pm$ 0.18 \\
+Early-5, base features & 71.08 $\pm$ 0.24 & 70.28 $\pm$ 0.13 & 70.09 $\pm$ 0.21 \\
+\multicolumn{4}{l}{\textbf{CIFAR-10N Worse}} \\
+Method & Base 42 & Base 43 &  \\
+Base & 88.84 & 89.63 &  \\
+Uniform TTA & 89.29 & 90.52 &  \\
+MSP weighting & 89.27 & 90.51 &  \\
+Gap weighting & 89.27 & 90.58 &  \\
+Entropy weighting & 89.30 & 90.53 &  \\
+Early-5, ResNet18 & 90.01 $\pm$ 0.17 & 90.77 $\pm$ 0.23 &  \\
+Static, base features & 89.19 $\pm$ 0.13 & 90.53 $\pm$ 0.02 &  \\
+History-50, base features & 89.01 $\pm$ 0.31 & 90.43 $\pm$ 0.12 &  \\
+Early-5, base features & 90.16 $\pm$ 0.02 & 91.28 $\pm$ 0.02 &  \\
 \bottomrule
 \end{tabular}

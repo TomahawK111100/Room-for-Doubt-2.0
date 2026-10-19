@@ -38,8 +38,8 @@ and view/prediction caches documented in `docs/kaggle.md`.
 ## Current scope
 
 The draft covers Early-5 scalar regression on frozen base features, uniform and
-static-score TTA, matched static/history scalar targets, two CIFAR100 base seeds
-and one CIFAR10 Worse base seed. It does not merge historical ResNet34/Top-2/CFM
+static-score TTA, matched static/history scalar targets, three CIFAR100 base seeds (42/43/44)
+and two CIFAR10 Worse base seeds (42/43). It does not merge historical ResNet34/Top-2/CFM
 numbers with the new ResNet50 evaluation. Further replication is pending; no
 unseen run is represented by a placeholder result.
 
