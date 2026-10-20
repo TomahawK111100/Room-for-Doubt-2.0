@@ -98,3 +98,33 @@ def test_inspection_distinguishes_wrong_base(tmp_path, monkeypatch):
     assert report["studies"][0]["study"] == str(study)
     assert not report["studies"][0]["digest_matches"]
     assert report["studies"][0]["missing_files"] == []
+
+
+def test_policy_digest_is_reported_and_blocks_execution(tmp_path, monkeypatch):
+    study, _, sha = make_study(tmp_path)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    (study / "artifacts/policies_before_test.json").write_text(
+        json.dumps(dict(base_digest="different model"))
+    )
+    row = launcher.inspect_inputs(tmp_path)["studies"][0]
+    assert row["missing_files"] == []
+    assert row["digest_matches"]
+    assert not row["valid"]
+    assert "Frozen policy digest differs from study" in row["rejection_reasons"]
+    with pytest.raises(ValueError, match="Frozen policy digest differs"):
+        launcher.discover(tmp_path)
+
+
+def test_same_preflight_for_inspection_and_execution(tmp_path, monkeypatch):
+    _, _, sha = make_study(tmp_path)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    original = Path.rglob
+
+    def single_pattern_only(path, pattern, *args, **kwargs):
+        assert "/" not in pattern, "Do not use compound glob to discover markers"
+        return original(path, pattern, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "rglob", single_pattern_only)
+    row = launcher.inspect_inputs(tmp_path)["studies"][0]
+    assert row["valid"] and row["checkpoint_digest"] == sha
+    assert launcher.discover(tmp_path)[0]["study"] == row["study"]

@@ -56,86 +56,90 @@ def study_requirements(cfg):
                              f"artifacts/test_{encoder}__{mode}__{seed}.npy"]
     return required
 
-def inspect_inputs(root):
-    """Explain absent/mismatched artifacts without training or requiring a GPU."""
-    root = Path(root)
-    rows = []
-    for path in sorted(root.rglob("config.yaml")):
+def candidate_studies(root):
+    """Use config enumeration for both inspection and execution, including mount layouts."""
+    for path in sorted(Path(root).rglob("config.yaml")):
         if "heads" in path.parts or ".hydra" in path.parts:
             continue
+        cfg = OmegaConf.load(path)
+        if (not OmegaConf.is_dict(cfg) or cfg.get("base_seed") is None
+                or not cfg.get("encoders") or not cfg.get("target_modes")
+                or not cfg.get("base_digest")):
+            continue
+        yield path.parent, cfg
+
+
+def inspect_inputs(root):
+    """Run the same full preflight used by execution, without a GPU or training."""
+    root = Path(root)
+    rows = []
+    for study, cfg in candidate_studies(root):
+        key = f"{cfg.dataset.name}_seed{cfg.base_seed}"
+        base = study.parent / "base"
+        required = study_requirements(cfg) + ["native_features/train_complete.json"]
+        missing = [name for name in required if not (study / name).exists()]
+        for name in ("checkpoints/best.pt", "config.yaml", "metrics.json",
+                     "history.csv", "artifacts/meta_targets.npz",
+                     "artifacts/split_ids.npz"):
+            if not (base / name).exists():
+                missing.append("../base/" + name)
+        reasons = []
+        status, policy_digest, actual_digest = None, None, None
         try:
-            cfg = OmegaConf.load(path)
-            if (cfg.get("base_seed") is None or not cfg.get("encoders")
-                    or not cfg.get("target_modes") or not cfg.get("base_digest")):
-                continue
-            key = f"{cfg.dataset.name}_seed{cfg.base_seed}"
-            study = path.parent
-            base = study.parent / "base"
-            missing = [name for name in study_requirements(cfg)
-                       if not (study / name).exists()]
-            if not (study / "native_features/train_complete.json").exists():
-                missing.append("native_features/train_complete.json")
-            for name in ("checkpoints/best.pt", "config.yaml", "metrics.json",
-                         "history.csv", "artifacts/meta_targets.npz",
-                         "artifacts/split_ids.npz"):
-                if not (base / name).exists():
-                    missing.append("../base/" + name)
             metrics_path = study / "metrics.json"
-            status = json.loads(metrics_path.read_text()).get("status") if metrics_path.exists() else None
-            rows.append(dict(
-                key=key, study=str(study), status=status,
-                expected_digest=EXPECTED.get(key), found_digest=cfg.base_digest,
-                digest_matches=EXPECTED.get(key) == cfg.base_digest,
-                missing_files=missing,
-            ))
-        except (AttributeError, TypeError, ValueError, KeyError) as exc:
-            rows.append(dict(path=str(path), inspection_error=str(exc)))
+            if metrics_path.exists():
+                status = json.loads(metrics_path.read_text()).get("status")
+            policy_path = study / "artifacts/policies_before_test.json"
+            if policy_path.exists():
+                policy_digest = json.loads(policy_path.read_text()).get("base_digest")
+            if (base / "checkpoints/best.pt").exists():
+                actual_digest = digest(base / "checkpoints/best.pt")
+        except (OSError, ValueError) as exc:
+            reasons.append(str(exc))
+        if key not in EXPECTED:
+            reasons.append("Not a requested base")
+        elif cfg.base_digest != EXPECTED[key]:
+            reasons.append("Study configuration digest differs from requested base")
+        if missing:
+            reasons.append("Required files missing")
+        if status != "complete":
+            reasons.append("Study status is not complete")
+        if policy_digest != cfg.base_digest:
+            reasons.append("Frozen policy digest differs from study")
+        if actual_digest != cfg.base_digest:
+            reasons.append("Checkpoint identity differs from study")
+        rows.append(dict(
+            key=key, study=str(study), base=str(base), status=status,
+            expected_digest=EXPECTED.get(key), found_digest=cfg.base_digest,
+            digest_matches=EXPECTED.get(key) == cfg.base_digest,
+            policy_digest=policy_digest, checkpoint_digest=actual_digest,
+            missing_files=missing, rejection_reasons=reasons, valid=not reasons,
+        ))
     return dict(
         input_folders=[str(p) for p in sorted(root.iterdir())] if root.exists() else [],
-        studies=rows,
-        expected_jobs=list(EXPECTED),
+        studies=rows, expected_jobs=list(EXPECTED),
     )
 
 
-
 def discover(root):
-    """Select exact bases, never infer identity from notebook names or old paths."""
+    """Consume the exact same verified rows exposed by --inspect-inputs."""
+    report = inspect_inputs(root)
     found = {}
-    for marker in sorted(Path(root).rglob("native_features/train_complete.json")):
-        study = marker.parent.parent
-        if not (study / "config.yaml").exists():
+    for row in report["studies"]:
+        if not row["valid"]:
             continue
-        cfg = OmegaConf.load(study / "config.yaml")
-        key = f"{cfg.dataset.name}_seed{cfg.base_seed}"
-        if key not in EXPECTED or cfg.base_digest != EXPECTED[key]:
-            continue
-        required = study_requirements(cfg)
-        if any(not (study / name).exists() for name in required):
-            continue
-        metrics = json.loads((study / "metrics.json").read_text())
-        policy = json.loads((study / "artifacts/policies_before_test.json").read_text())
-        if metrics.get("status") != "complete" or policy["base_digest"] != cfg.base_digest:
-            continue
-        base = study.parent / "base"
-        if not (base / "checkpoints/best.pt").exists():
-            continue
-        if any(not (base / name).exists() for name in (
-            "config.yaml", "metrics.json", "history.csv",
-            "artifacts/meta_targets.npz", "artifacts/split_ids.npz",
-        )):
-            continue
-        if digest(base / "checkpoints/best.pt") != EXPECTED[key]:
-            raise ValueError(f"Checkpoint identity differs: {base}")
+        key = row["key"]
         if key in found:
             raise ValueError(f"Duplicate full Outputs for {key}; attach one copy of each")
-        found[key] = dict(key=key, base=str(base), study=str(study),
-                          base_digest=cfg.base_digest, dataset=cfg.dataset.name)
+        found[key] = dict(key=key, base=row["base"], study=row["study"],
+                          base_digest=row["checkpoint_digest"],
+                          dataset=key.rsplit("_seed", 1)[0])
     missing = set(EXPECTED) - found.keys()
     if missing:
         raise ValueError(
             f"Missing complete Outputs: {sorted(missing)}. "
-            "No experiment has started. Attach the matching full Notebook Outputs. "
-            "Input diagnostics:\\n" + json.dumps(inspect_inputs(root), indent=2)
+            "No experiment has started. Input diagnostics:\\n"
+            + json.dumps(report, indent=2)
         )
     return [found[key] for key in EXPECTED]
 
