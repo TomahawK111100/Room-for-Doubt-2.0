@@ -77,3 +77,24 @@ def test_duplicate_copies_rejected(tmp_path, monkeypatch):
     monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
     with pytest.raises(ValueError, match="Duplicate full Outputs"):
         launcher.discover(tmp_path)
+
+
+def test_inspection_names_missing_artifact(tmp_path, monkeypatch):
+    study, _, sha = make_study(tmp_path)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    missing = "projected/base_resnet50/train.npy"
+    (study / missing).unlink()
+    report = launcher.inspect_inputs(tmp_path)
+    assert report["studies"][0]["digest_matches"]
+    assert report["studies"][0]["missing_files"] == [missing]
+    with pytest.raises(ValueError, match="projected/base_resnet50/train.npy"):
+        launcher.discover(tmp_path)
+
+
+def test_inspection_distinguishes_wrong_base(tmp_path, monkeypatch):
+    study, _, _ = make_study(tmp_path)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44="other digest"))
+    report = launcher.inspect_inputs(tmp_path)
+    assert report["studies"][0]["study"] == str(study)
+    assert not report["studies"][0]["digest_matches"]
+    assert report["studies"][0]["missing_files"] == []

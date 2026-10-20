@@ -30,6 +30,74 @@ def digest(path):
     return result.hexdigest()
 
 
+def study_requirements(cfg):
+    required = [
+        "metrics.json", "artifacts/policies_before_test.json",
+        "artifacts/training_targets.npz",
+        "native_features/train_features.npy",
+        "projected/base_resnet50/projection.npz",
+        "projected/base_resnet50/train.npy",
+        "projected/base_resnet50/val.npy",
+        "projected/base_resnet50/test.npy",
+        "shared/cache/test_complete.json",
+        "shared/cache/val_complete.json",
+    ]
+    for split in ("val", "test"):
+        required += [
+            f"native_features/{split}_complete.json",
+            *[f"shared/cache/{split}_{suffix}.npy" for suffix in ("probs", "ids", "labels")],
+        ]
+    for encoder in cfg.encoders:
+        for mode in cfg.target_modes:
+            for seed in cfg.seeds:
+                head = f"heads/{encoder}_{mode}_{seed}"
+                required += [f"{head}/checkpoints/best.pt", f"{head}/metrics.json",
+                             f"{head}/history.csv",
+                             f"artifacts/test_{encoder}__{mode}__{seed}.npy"]
+    return required
+
+def inspect_inputs(root):
+    """Explain absent/mismatched artifacts without training or requiring a GPU."""
+    root = Path(root)
+    rows = []
+    for path in sorted(root.rglob("config.yaml")):
+        if "heads" in path.parts or ".hydra" in path.parts:
+            continue
+        try:
+            cfg = OmegaConf.load(path)
+            if (cfg.get("base_seed") is None or not cfg.get("encoders")
+                    or not cfg.get("target_modes") or not cfg.get("base_digest")):
+                continue
+            key = f"{cfg.dataset.name}_seed{cfg.base_seed}"
+            study = path.parent
+            base = study.parent / "base"
+            missing = [name for name in study_requirements(cfg)
+                       if not (study / name).exists()]
+            if not (study / "native_features/train_complete.json").exists():
+                missing.append("native_features/train_complete.json")
+            for name in ("checkpoints/best.pt", "config.yaml", "metrics.json",
+                         "history.csv", "artifacts/meta_targets.npz",
+                         "artifacts/split_ids.npz"):
+                if not (base / name).exists():
+                    missing.append("../base/" + name)
+            metrics_path = study / "metrics.json"
+            status = json.loads(metrics_path.read_text()).get("status") if metrics_path.exists() else None
+            rows.append(dict(
+                key=key, study=str(study), status=status,
+                expected_digest=EXPECTED.get(key), found_digest=cfg.base_digest,
+                digest_matches=EXPECTED.get(key) == cfg.base_digest,
+                missing_files=missing,
+            ))
+        except (AttributeError, TypeError, ValueError, KeyError) as exc:
+            rows.append(dict(path=str(path), inspection_error=str(exc)))
+    return dict(
+        input_folders=[str(p) for p in sorted(root.iterdir())] if root.exists() else [],
+        studies=rows,
+        expected_jobs=list(EXPECTED),
+    )
+
+
+
 def discover(root):
     """Select exact bases, never infer identity from notebook names or old paths."""
     found = {}
@@ -41,31 +109,7 @@ def discover(root):
         key = f"{cfg.dataset.name}_seed{cfg.base_seed}"
         if key not in EXPECTED or cfg.base_digest != EXPECTED[key]:
             continue
-        required = [
-            "metrics.json", "artifacts/policies_before_test.json",
-            "artifacts/training_targets.npz",
-            "native_features/train_features.npy",
-            "projected/base_resnet50/projection.npz",
-            "projected/base_resnet50/train.npy",
-            "projected/base_resnet50/val.npy",
-            "projected/base_resnet50/test.npy",
-            "shared/cache/test_complete.json",
-            "shared/cache/val_complete.json",
-        ]
-        if any(not (study / name).exists() for name in required):
-            continue
-        for split in ("val", "test"):
-            required += [
-                f"native_features/{split}_complete.json",
-                *[f"shared/cache/{split}_{suffix}.npy" for suffix in ("probs", "ids", "labels")],
-            ]
-        for encoder in cfg.encoders:
-            for mode in cfg.target_modes:
-                for seed in cfg.seeds:
-                    head = f"heads/{encoder}_{mode}_{seed}"
-                    required += [f"{head}/checkpoints/best.pt", f"{head}/metrics.json",
-                                 f"{head}/history.csv",
-                                 f"artifacts/test_{encoder}__{mode}__{seed}.npy"]
+        required = study_requirements(cfg)
         if any(not (study / name).exists() for name in required):
             continue
         metrics = json.loads((study / "metrics.json").read_text())
@@ -89,8 +133,9 @@ def discover(root):
     missing = set(EXPECTED) - found.keys()
     if missing:
         raise ValueError(
-            "Attach BOTH completed replication notebooks via Add Input > Notebook. "
-            f"Missing complete Outputs: {sorted(missing)}. Compact ZIPs are insufficient."
+            f"Missing complete Outputs: {sorted(missing)}. "
+            "No experiment has started. Attach the matching full Notebook Outputs. "
+            "Input diagnostics:\\n" + json.dumps(inspect_inputs(root), indent=2)
         )
     return [found[key] for key in EXPECTED]
 
@@ -163,7 +208,12 @@ def main():
     parser.add_argument("--output", type=Path,
                         default=Path("/kaggle/working/rfd_followups"))
     parser.add_argument("--max-hours", type=float, default=6)
+    parser.add_argument("--inspect-inputs", action="store_true",
+                        help="Print attached study identities and missing files; no GPU or experiment")
     args = parser.parse_args()
+    if args.inspect_inputs:
+        print(json.dumps(inspect_inputs(args.input_root), indent=2))
+        return
     if args.max_hours <= 0:
         raise ValueError("Positive time budget required")
     import torch
