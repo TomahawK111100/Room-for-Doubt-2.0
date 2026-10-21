@@ -502,3 +502,42 @@ blocked; no completed result is inferred for it. The compact summary was
 imported into outputs/kaggle_available_controls_import_20261021/. Public
 manuscript evidence now includes augmentation controls on all three C100 bases
 and C10 base43. The full checkpoint/prediction arrays remain outside Git.
+
+## Parallel CIFAR-10N closeout
+
+Two independent notebooks can run these fixed jobs concurrently:
+
+    python scripts/kaggle_cifar10_closeout.py --task control42 --inspect-inputs
+    python scripts/kaggle_cifar10_closeout.py --task control42
+
+    python scripts/kaggle_cifar10_closeout.py --task seed44
+
+The control42 job uses the existing exact completed base and full matched study
+if mounted. If only the verified completed base42 is available, it rebuilds the
+standard 18-head study under the saved recipe, then runs paired contrasts and
+the three-head augmented-static control. This is new head fitting on the same
+base, not recovery of original head weights or an additional independent base.
+Original-versus-rebuilt accuracy, selected views and temperatures are saved in a
+descriptive CSV without selecting the more favorable result. An absent,
+incomplete or wrong-digest base42 stops the job before fitting. Attach the same
+Inputs used for the completed recovery batch; no old Notebook Output is fetched
+by the launcher. A summary ZIP alone cannot supply missing weights/trajectories.
+
+The seed44 job has no dependency on historical Notebook Outputs. It trains only
+CIFAR-10N Worse base44 for50 epochs, retaining split seed42 and the original
+ImageNet ResNet50 CE/GCE recipe. It then runs the standard three-head-seed study,
+direct contrasts and augmented-static control. It does not repeat bases42/43.
+Use T4 x2 and Internet enabled for the matched base training. Existing mounted
+raw data are linked; otherwise official images, annotation and pretrained
+weights are downloaded by the existing training pipeline.
+
+The launch settings are in configs/cifar10_closeout.yaml: eight-hour session
+admission budget,4.5 hours for base training, up to three hours for the standard
+study and up to two hours for the control, reduced by the remaining session
+budget. Stages use separate processes to release CPU/GPU allocations. Partial
+runs and blocked inputs are explicit; preserve full Output to resume incomplete
+work. The launcher never starts base42 training as a missing-input fallback.
+
+Outputs are `/kaggle/working/rfd_cifar10_control42/closeout_summary.zip` and
+`/kaggle/working/rfd_cifar10_seed44/closeout_summary.zip`. Read the status inside
+each ZIP before treating it as a completed experiment.
