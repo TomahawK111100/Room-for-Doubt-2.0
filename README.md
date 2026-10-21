@@ -21,16 +21,16 @@ the mean margin over the first five epochs (**Early-5**) from frozen base featur
 | CIFAR-100N / 44 | 69.57% | 69.57% | 70.09% | +0.52 pp |
 | CIFAR-10N Worse / 42 | 88.84% | 89.29% | 90.16% | +1.32 pp |
 | CIFAR-10N Worse / 43 | 89.63% | 90.52% | 91.28% | +1.65 pp |
+| CIFAR-10N Worse / 44 | 88.49% | 88.82% | 90.39% | +1.90 pp |
 
 Early-5 values average three head initializations **within each base**. Those
 heads are not three independent base-training runs. Each method selects its own
 view count and temperature using noisy validation. Test results have been
-inspected during development and remain exploratory; further replications are
-pending. Uniform TTA selects ten views on four bases and one on CIFAR-100N seed44;
+inspected during development and remain exploratory. Uniform TTA selects ten views on five bases and one on CIFAR-100N seed44;
 Early-5 selects five or ten depending on the base and head. Accuracy is downstream
 FP32 evaluation throughout. Across independent bases, mean gains over base are
-+0.84 pp (CIFAR-100N, n=3) and +1.49 pp (CIFAR-10N Worse, n=2). Between-base
-sample SDs of these gains are 0.28 and 0.23 pp, not confidence intervals.
++0.84 pp (CIFAR-100N, n=3) and +1.62 pp (CIFAR-10N Worse, n=3). Between-base
+sample SDs of these gains are 0.28 and 0.29 pp, not confidence intervals.
 
 ![Accuracy gain on completed bases](paper/revision/figures/accuracy_gain.png)
 
@@ -46,19 +46,21 @@ claimed. Static and temporal target construction also differs in augmentation
 and measurement conditions; the target comparison does not isolate a causal
 benefit from time alone.
 
-An augmentation-matched static control now covers all three CIFAR-100N bases
-and CIFAR-10N Worse base43. CIFAR-100N augmented-static accuracies are
-**70.32% / 69.27% / 69.57%** (bases42/43/44), versus Early-5
-**71.08% / 70.28% / 70.09%**. The mean per-base advantage is **+0.76 pp**;
+An augmentation-matched static control now covers all six bases. CIFAR-100N
+augmented-static accuracies are **70.32% / 69.27% / 69.57%**, versus Early-5
+**71.08% / 70.28% / 70.09%** (bases42/43/44). The mean advantage is **+0.76 pp**;
 seven of nine conditional head-level accuracy intervals are positive, while two
-on base44 include zero. On C10 base43, the control obtains **90.61%** versus
-**91.28%**, with all three intervals positive. All twelve original-view AUROC
-difference intervals are positive. These heads span four independent bases.
-The C10 base42 augmentation control remains blocked by missing verified study
-inputs. The control addresses augmentation acquisition, but does not isolate
-time from online weights or the CE/GCE schedule. C100 base42 uses a recovered
-native FP32 probability cache with recorded provenance and reproduced frozen
-accuracies; bit-identical shared probabilities are not claimed.
+on base44 include zero. For CIFAR-10N Worse, the control obtains
+**89.28% / 90.61% / 88.91%**, versus **90.16% / 91.28% / 90.39%**;
+the mean advantage is **+1.01 pp**, with all nine intervals positive.
+All eighteen original-view AUROC difference intervals are positive. These heads
+span six independent bases, not eighteen. The control addresses augmentation
+acquisition, but does not isolate time from online weights or the CE/GCE schedule.
+C10 base42 reuses its verified original checkpoint; rebuilding the feature study
+reproduces all 23 previous accuracies, view counts and temperatures and does not
+add an independent base. C100 base42 uses a recovered native FP32 probability
+cache with recorded provenance and reproduced frozen accuracies; bit-identical
+shared probabilities are not claimed.
 
 A preliminary one-session Tesla T4 microbenchmark finds close equal-view timing:
 including preprocessing, C100 five-view uniform/Early-5 medians are **20.25/20.36 ms**;
@@ -102,7 +104,7 @@ Inputs, independent-base campaigns, checkpoint recovery and memory bounds.
 - `python scripts/run.py run-kaggle-campaign`: run bounded independent-base jobs;
   dataset-specific profiles and their launchers are documented in the Kaggle guide.
 
-Two follow-up commands have completed on C100 bases42/43/44 and C10 Worse base43:
+Two follow-up commands have completed on bases42/43/44 of both datasets:
 
 - `python scripts/run.py contrast-feature-targets study_run=/path/to/full/study`:
   direct paired Early-5 versus Static/History-50 accuracy and AUROC comparisons,

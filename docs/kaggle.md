@@ -541,3 +541,17 @@ work. The launcher never starts base42 training as a missing-input fallback.
 Outputs are `/kaggle/working/rfd_cifar10_control42/closeout_summary.zip` and
 `/kaggle/working/rfd_cifar10_seed44/closeout_summary.zip`. Read the status inside
 each ZIP before treating it as a completed experiment.
+
+
+### Completed closeout import, 22 October 2026
+
+Both tasks completed at commit 5df2c8f: control42 in 55.39 min and seed44 in 3.57 h.
+The first reuses the original verified base42 and rebuilds 18 heads; all 23 old
+selected policies and accuracies reproduce. The second completes 50 base epochs,
+selects epoch 2 by noisy validation, and runs the full study and target controls.
+Both compact imports and original configs are preserved locally under
+outputs/kaggle_cifar10_closeout_import_20261022/. The manuscript now covers
+seeds42/43/44 on both datasets. This closes those scheduled CIFAR runs; it does
+not add a new inference timing session or remove the exploratory-test limitation.
+Preserve the full seed44 Output as well: the compact archive contains no model
+weights or raw predictions and cannot support further checkpoint-dependent work.

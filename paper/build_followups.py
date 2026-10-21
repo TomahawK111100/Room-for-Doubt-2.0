@@ -10,7 +10,8 @@ from build_figures import ROOT, check_evidence, save, style
 from build_tables import table
 
 RUNS = [("c100_s42", "C100/42"), ("c100_s43", "C100/43"),
-        ("c100_s44", "C100/44"), ("c10_s43", "C10/43")]
+        ("c100_s44", "C100/44"), ("c10_s42", "C10/42"),
+        ("c10_s43", "C10/43"), ("c10_s44", "C10/44")]
 RUNTIME_RUNS = [("c100_s44", "C100/44"), ("c10_s43", "C10/43")]
 LABELS = {
     "best_margin": "Static",
@@ -29,29 +30,35 @@ def read(run, stage, name):
 def main():
     check_evidence()
     rows = []
-    for mode in ("best_margin", "best_augmented_mean", "history_mean", "early_mean"):
-        cells = [LABELS[mode]]
-        for run, _ in RUNS:
-            r = next(r for r in read(run, "augmentation", "aggregate")
-                     if r["method"] == "base_resnet50__" + mode)
-            cells.append(f"{100*float(r['acc']):.2f} $\\pm$ {100*float(r['acc_sd']):.2f}")
-        rows.append(cells)
-    table("followup_accuracy.tex", "lrrrr",
-          "Target & C100 (42) & C100 (43) & C100 (44) & C10 Worse (43)", rows)
+    for prefix, dataset in (("c100_", "CIFAR-100N"), ("c10_", "CIFAR-10N Worse")):
+        group = [(run, label) for run, label in RUNS if run.startswith(prefix)]
+        rows.append([r"\multicolumn{4}{l}{\textbf{" + dataset + "}}"])
+        for mode in ("best_margin", "best_augmented_mean", "history_mean", "early_mean"):
+            cells = [LABELS[mode]]
+            for run, _ in group:
+                r = next(r for r in read(run, "augmentation", "aggregate")
+                         if r["method"] == "base_resnet50__" + mode)
+                cells.append(f"{100*float(r['acc']):.2f} $\\pm$ {100*float(r['acc_sd']):.2f}")
+            rows.append(cells)
+    table("followup_accuracy.tex", "lrrr", "Target & Base 42 & Base 43 & Base 44", rows)
 
-    rows = []
-    for run, label in RUNS:
-        for r in read(run, "augmentation", "paired_target_contrasts"):
-            assert r["encoder"] == "base_resnet50"
-            rows.append([
-                label, r["head_seed"], LABELS[r["reference"]],
-                r["reference_views"] + "/" + r["proposed_views"],
-                f"{float(r['gain_pp']):+.2f}",
-                f"[{float(r['ci_low_pp']):+.2f}, {float(r['ci_high_pp']):+.2f}]",
-                f"{float(r['auroc_difference']):+.4f}",
-            ])
-    table("followup_pairs.tex", "lllrrrr",
-          "Run & Seed & Reference & $V_r/V_e$ & Gain & 95\\% CI & $\\Delta$AUROC", rows)
+    for prefix, filename in (("c100_", "followup_pairs.tex"),
+                             ("c10_", "followup_pairs_c10.tex")):
+        rows = []
+        for run, label in RUNS:
+            if not run.startswith(prefix):
+                continue
+            for r in read(run, "augmentation", "paired_target_contrasts"):
+                assert r["encoder"] == "base_resnet50"
+                rows.append([
+                    label, r["head_seed"], LABELS[r["reference"]],
+                    r["reference_views"] + "/" + r["proposed_views"],
+                    f"{float(r['gain_pp']):+.2f}",
+                    f"[{float(r['ci_low_pp']):+.2f}, {float(r['ci_high_pp']):+.2f}]",
+                    f"{float(r['auroc_difference']):+.4f}",
+                ])
+        table(filename, "lllrrrr",
+              "Run & Seed & Reference & $V_r/V_e$ & Gain & 95\\% CI & $\\Delta$AUROC", rows)
 
     rows = []
     for run, label in RUNTIME_RUNS:
@@ -73,28 +80,34 @@ def main():
           "Run & Method & Views & Model ms & With prep. ms & Peak MB", rows)
 
     plt.rcParams.update({"font.size": 9, "pdf.fonttype": 42})
-    fig, ax = plt.subplots(figsize=(7.2, 5.6), layout="constrained")
-    index = 0
-    labels = []
-    for run, title in RUNS:
-        for r in read(run, "augmentation", "paired_target_contrasts"):
-            if r["reference"] != "best_augmented_mean":
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 5.2), sharex=True,
+                             layout="constrained")
+    for ax, prefix, title, color in zip(
+            axes, ("c100_", "c10_"), ("CIFAR-100N", "CIFAR-10N Worse"),
+            ("#007F83", "#597BA7")):
+        labels = []
+        for run, _ in RUNS:
+            if not run.startswith(prefix):
                 continue
-            gain, low, high = [float(r[k]) for k in ("gain_pp", "ci_low_pp", "ci_high_pp")]
-            color = "#007F83" if run.startswith("c100") else "#597BA7"
-            ax.errorbar(gain, index, xerr=[[gain-low], [high-gain]],
-                        fmt="o", color=color, capsize=4, markersize=5)
-            labels.append(title + " / head " + r["head_seed"])
-            index += 1
-    ax.set_yticks(range(index), labels)
-    ax.set_ylim(index-.5, -.5)
-    ax.axvline(0, color="#444444", linewidth=1)
-    ax.set_xlabel("Early-5 minus augmented static accuracy (percentage points)")
-    ax.set_title("Conditional paired 95% intervals; each method keeps its own policy",
-                 loc="left", fontsize=10)
-    style(ax)
+            for r in read(run, "augmentation", "paired_target_contrasts"):
+                if r["reference"] != "best_augmented_mean":
+                    continue
+                gain, low, high = [float(r[k]) for k in ("gain_pp", "ci_low_pp", "ci_high_pp")]
+                index = len(labels)
+                ax.errorbar(gain, index, xerr=[[gain-low], [high-gain]],
+                            fmt="o", color=color, capsize=4, markersize=5)
+                labels.append(run.split("s")[-1] + " / " + r["head_seed"])
+        ax.set_yticks(range(len(labels)), labels)
+        ax.set_ylim(len(labels)-.5, -.5)
+        ax.set_xlim(-.3, 2.05)
+        ax.axvline(0, color="#444444", linewidth=1)
+        ax.set_title(title, loc="left", fontsize=10)
+        ax.set_ylabel("Base seed / head seed")
+        style(ax)
+    fig.supxlabel("Early-5 minus augmented static accuracy (percentage points)", fontsize=9)
+    fig.suptitle("Conditional paired 95% intervals; each method keeps its own policy", fontsize=10)
     save(fig, "augmentation_control")
-    print("Generated 3 follow-up tables and paired-control figure; evidence hashes verified.")
+    print("Generated 4 follow-up tables and paired-control figure; evidence hashes verified.")
 
 
 if __name__ == "__main__":

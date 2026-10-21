@@ -40,9 +40,9 @@ and view/prediction caches documented in `docs/kaggle.md`.
 
 The draft covers Early-5 scalar regression on frozen base features, uniform and
 static-score TTA, matched static/history scalar targets, three CIFAR100 base seeds (42/43/44)
-and two CIFAR10 Worse base seeds (42/43). It does not merge historical ResNet34/Top-2/CFM
-numbers with the new ResNet50 evaluation. Further replication is pending; no
-unseen run is represented by a placeholder result.
+and three CIFAR10 Worse base seeds (42/43/44). It does not merge historical ResNet34/Top-2/CFM
+numbers with the new ResNet50 evaluation. The augmentation controls cover all six bases; the CIFAR10 base42 study was
+rebuilt on its verified original checkpoint with the earlier policies reproduced.
 
 Nominal intervals are conditional paired test-example bootstrap intervals, not
 uncertainty across base training runs. Current test evidence is exploratory.
@@ -71,7 +71,7 @@ the imported outputs. `evidence/file_manifest.csv` records their public-file has
 The evidence/followups folder preserves direct comparisons, augmentation-control selection/results,
 and full compact T4 timing tables for C100 base44 and C10 Worse base43. Source paths,
 base digests and run commit are in its sources.csv; public bytes are covered by the
-main evidence hash manifest. The build_followups.py script regenerates three tables and the
+main evidence hash manifest. The build_followups.py script regenerates four tables and the
 paired augmentation-control figure. Intervals condition on each fitted base/head;
 that first batch covers one base per dataset; later controls are recorded below. Runtime is one fixed-order session,
 not an independently replicated performance guarantee. Full checkpoints, raw predictions
@@ -80,17 +80,35 @@ and raw timing repetitions remain in Kaggle Outputs, outside the compact evidenc
 ## Additional CIFAR-100N controls (21 October)
 
 Both added base42/base43 paired and augmentation stages completed; the combined
-campaign is partial because C10 base42 remains blocked. The new evidence consists of ten stage tables plus two cache-recovery CSVs,
+campaign was partial at that import because C10 base42 lacked inputs; this is resolved in the 22 October import below. The new evidence consists of ten stage tables plus two cache-recovery CSVs,
 preserved under evidence/followups/. Full imports remain local
 under outputs/kaggle_available_controls_import_20261021/. The review verifies
 42 contrast point estimates, existing selected policies/accuracies, and 93
 reported native-cache recovery accuracy checks. It cannot recompute bootstrap
 intervals or inspect actual weights from the compact export.
 
-The augmentation-control figure and tables now cover C100 bases42/43/44 and
+At the 21 October import, the augmentation-control figure and tables covered C100 bases42/43/44 and
 C10 Worse base43. Seven of nine C100 head intervals exclude zero; two on base44
 include zero. Mean Early-5-minus-augmented-static gain across the three C100
 bases is 0.76 percentage points (sample SD 0.24), with heads averaged within base.
 Cache recovery uses saved native FP32 arrays and explicitly does not claim
 bit-identical original shared probabilities. The single-session runtime evidence
 is unchanged and still covers only C10044 and C10 43.
+
+## Completed CIFAR-10N closeout (22 October)
+
+The control42 and new base44 tasks both completed at source commit 5df2c8f.
+Full compact imports are preserved locally under
+outputs/kaggle_cifar10_closeout_import_20261022/{control42,seed44}; the review
+under outputs/cifar10_closeout_review_20261022 records source hashes and checks
+42 direct contrast point estimates and 76 frozen policy entries. The new public
+c10_s44 snapshot and follow-up tables extend all main figures and target controls
+to three independent bases per dataset. Control42 rebuilds 18 heads on its verified
+original base, reproducing all 23 prior policies/accuracies; the original main
+snapshot is retained. Rebuilding is not another independent base run.
+
+Nine of nine C10 augmented-static conditional accuracy intervals are positive;
+seven of nine C100 intervals are positive. All 18 original-view AUROC difference
+intervals are positive. Raw predictions and the new base44 checkpoint are absent
+from the compact export; verification checks metadata and arithmetic, not the
+raw bootstrap or the new checkpoint bytes. Runtime measurements are unchanged.

@@ -82,7 +82,7 @@ def accuracy_gain():
     ax.set_ylim(len(RUNS) - .45, -.65)
     ax.set_xlim(-.6, 2.1)
     ax.set_xlabel("Test accuracy gain over the same base (percentage points)")
-    ax.set_title("Validation-selected policies on five completed bases", loc="left")
+    ax.set_title("Validation-selected policies on six completed bases", loc="left")
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, ncol=4, frameon=False,
                loc="outside upper center", fontsize=8)
