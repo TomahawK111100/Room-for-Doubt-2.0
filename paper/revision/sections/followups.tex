@@ -1,0 +1,47 @@
+\clearpage
+\section{Follow-up Target Controls}
+\label{app:followup_controls}
+The follow-up covers CIFAR-100N base seed 44 and CIFAR-10N Worse base seed 43. It reuses frozen base features, the original train-only PCA, and the nine existing base-feature heads per base. Three new heads per base predict the mean observed-label margin over five augmentations at the minimum-noisy-validation-loss checkpoint. The transform is the actual base-training sequence: constant-padding random crop at $32\times32$, random horizontal flip, then ImageNet resize/normalization. This differs from the reflected-padding inference-view stream. Original training RNG draws were not recorded; the control samples new deterministic draws (seed 20261019). It neither matches online weight evolution nor separates the cross-entropy warmup from later GCE training.
+
+All old validation-selected policies and downstream accuracy values reproduce. New policies freeze before test evaluation; clean training labels do not construct targets or fit heads. The two augmentation-control jobs together fit six new heads; no base is retrained. The complete follow-up batch, including direct comparisons and runtime measurements, takes 41.89 minutes. This is not the cost of one deployment head.
+
+\begin{table}[!ht]
+\centering\small
+\caption{Follow-up accuracy (\%); mean $\pm$ sample SD over three heads on each base. Each method retains its own noisy-validation-selected policy.}
+\label{tab:followup_accuracy}
+\input{tables/followup_accuracy}
+\end{table}
+
+Table~\ref{tab:followup_pairs} gives direct Early-5 minus reference contrasts for the base-feature heads. Accuracy intervals use 2,000 paired test-example draws. AUROC differences compare original-view scores against the same original-view base-error events; their intervals use 2,000 paired stratified draws retaining the observed error/correct counts, with bootstrap seed 20261019. They are nominal, conditional, exploratory intervals without multiplicity correction, not intervals over independently trained bases.
+
+For Early-5 versus augmented-static, CIFAR-100N head-42/43/44 AUROC differences are 0.0259, 0.0260 and 0.0320, with intervals $[0.0198,0.0325]$, $[0.0195,0.0323]$, and $[0.0256,0.0383]$. CIFAR-10N differences are 0.0183, 0.0186 and 0.0168, with intervals $[0.0123,0.0239]$, $[0.0130,0.0238]$, and $[0.0107,0.0229]$. These positive ranking differences do not guarantee accuracy improvements or calibrated probabilities.
+
+\begin{table}[!ht]
+\centering\scriptsize
+\caption{Direct paired target contrasts. Gain and CI are accuracy percentage points; $\Delta$AUROC refers to original-view error ranking. $V_r/V_e$ lists reference/Early-5 selected views.}
+\label{tab:followup_pairs}
+\input{tables/followup_pairs}
+\end{table}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=\linewidth]{figures/augmentation_control.pdf}
+\caption{Early-5 minus augmented-static accuracy. Bars are nominal 95\% paired test-example intervals conditional on each fitted base/head and selected policy, without multiplicity correction. They do not estimate base-training uncertainty. The policies can select different view counts.}
+\label{fig:augmentation_control}
+\end{figure}
+
+\clearpage
+\section{Matched Inference Microbenchmark}
+\label{app:runtime}
+A single Tesla T4 session runs sequentially on CIFAR-100N base44 and CIFAR-10N base43 using PyTorch 2.11.0+cu128, FP32 and four CPU threads. Head seed42 is fixed. Each timing configuration uses five warmups and 30 synchronized repetitions. Batch sizes 1/4 and view counts 1/5/10 are predefined; images are the first four fixed noisy-validation IDs, with shared deterministic view prefixes. Neither accuracy nor labels select timing cases. Temperatures come from each saved view budget's validation policy, rather than the globally selected view count. This reference inference path fuses the selected base features, PCA and the scalar head; cache generation and model/disk loading are outside the timing scope.
+
+Table~\ref{tab:runtime} reports batch-size-one medians. The model scope starts from device tensors; the preprocessing scope includes CPU view generation, normalization and host-to-device transfer. Full CSVs retain batch medians/p95, batch-four amortized cost and GPU allocation measurements. Batch-four p95 is not per-image p95. Peak MB means PyTorch-allocated CUDA memory in decimal MB, not total device memory. Uniform/single-view policies skip the head.
+
+\begin{table}[!ht]
+\centering\small
+\caption{Single-image inference medians (ms), head42 on one T4. Peak MB is allocated memory for the preprocessing-inclusive scope. Comparisons use the same view budget; these are not independent timing replications.}
+\label{tab:runtime}
+\input{tables/followup_runtime}
+\end{table}
+
+At five/ten views the observed extra allocated peak memory is about 4.8 MB for the PCA/head. Multi-view prediction is substantially costlier than a one-view base pass. Close matched-view medians are preliminary: one session, a fixed measurement order, a tiny fixed image set, and no independent timing intervals preclude a precise overhead guarantee. Separate one-view cases using equivalent computations also exhibit timing variation. No two-base ensemble is timed. These results do not establish lower latency than an ensemble or the cost of separately returning a standalone error-ranking score for every image.

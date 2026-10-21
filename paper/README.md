@@ -23,6 +23,7 @@ From the repository root:
 ```sh
 python paper/build_tables.py
 python paper/build_figures.py
+python paper/build_followups.py
 cd paper/revision
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 bibtex main
@@ -64,3 +65,14 @@ are excluded from Git.
 
 Public CSV snapshots use LF line endings; numerical values are retained from
 the imported outputs. `evidence/file_manifest.csv` records their public-file hashes.
+
+## Completed follow-up evidence (21 October import)
+
+The evidence/followups folder preserves direct comparisons, augmentation-control selection/results,
+and full compact T4 timing tables for C100 base44 and C10 Worse base43. Source paths,
+base digests and run commit are in its sources.csv; public bytes are covered by the
+main evidence hash manifest. The build_followups.py script regenerates three tables and the
+paired augmentation-control figure. Intervals condition on each fitted base/head;
+only one base per dataset receives the new control. Runtime is one fixed-order session,
+not an independently replicated performance guarantee. Full checkpoints, raw predictions
+and raw timing repetitions remain in Kaggle Outputs, outside the compact evidence.

@@ -384,7 +384,8 @@ Kaggle measurements separate. These comparisons do not establish an advantage
 over a two-base ensemble, which needs its own matched timing experiment. Each
 independent timing run requires a fresh run ID. Outputs contain resolved config,
 metrics, hardware/precision metadata, a factual report, a compact timing CSV and
-raw timing repetitions. Real GPU measurements remain pending.
+raw timing repetitions. The first completed T4 measurements are preserved in the
+manuscript follow-up evidence; independent timing replications remain pending.
 
 ## Follow-ups on the two completed replications (19 October)
 
@@ -422,3 +423,10 @@ working directory skips completed stages after verifying the saved batch
 contract. To recover in a fresh notebook, preserve the prior full follow-up
 Output and restore it to the same writable output path before running; attaching
 a compact ZIP does not restore the new heads or target arrays.
+
+The batch was completed on 20 October 2026 and its compact export imported on
+21 October. All six stages finished in 41.89 minutes in this observed session;
+this is a retrospective duration, not a guaranteed budget. Existing policies and
+accuracies reproduced. C100 base44 / C10 Worse base43 augmentation-control and T4
+microbenchmark evidence is preserved in the manuscript. Full Outputs are still
+needed for arrays, new checkpoints and raw timing repetitions.

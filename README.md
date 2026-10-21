@@ -46,6 +46,19 @@ claimed. Static and temporal target construction also differs in augmentation
 and measurement conditions; the target comparison does not isolate a causal
 benefit from time alone.
 
+A follow-up on CIFAR-100N base44 and CIFAR-10N Worse base43 controls the
+static target's augmentation distribution: five training-style views at the
+fixed selected checkpoint. Augmented-static obtains **69.57% / 90.61%**, versus
+Early-5 **70.09% / 91.28%**. All three C10 paired accuracy intervals are positive;
+two of three C100 intervals include zero. This addresses augmentation acquisition,
+but does not isolate time from online weights or the CE/GCE schedule.
+
+A preliminary one-session Tesla T4 microbenchmark finds close equal-view timing:
+including preprocessing, C100 five-view uniform/Early-5 medians are **20.25/20.36 ms**;
+C10 ten-view medians are **40.93/41.01 ms**, batch size one. One-view base medians
+are **7.59/7.52 ms**. Four fixed validation images, one session and no independent
+timing intervals limit interpretation of small differences. No ensemble is timed.
+
 [Editable manuscript, compact evidence and figure generation](paper/README.md).
 All displayed figures and tables can be regenerated without training or weights.
 
@@ -82,8 +95,7 @@ Inputs, independent-base campaigns, checkpoint recovery and memory bounds.
 - `python scripts/run.py run-kaggle-campaign`: run bounded independent-base jobs;
   dataset-specific profiles and their launchers are documented in the Kaggle guide.
 
-Two follow-up commands are implemented and locally validated; their real-data
-results are still pending:
+Two follow-up commands have completed on C100 base44 and C10 Worse base43:
 
 - `python scripts/run.py contrast-feature-targets study_run=/path/to/full/study`:
   direct paired Early-5 versus Static/History-50 accuracy and AUROC comparisons,
@@ -95,7 +107,7 @@ results are still pending:
 A third follow-up, `python scripts/run.py benchmark-runtime`, prepares matched
 inference-cost measurements for the base, uniform TTA and Early-5. It records
 synchronized batch timings, separate model-only / preprocessing-inclusive scopes,
-and CUDA allocated memory where available. Real GPU measurements are pending.
+and CUDA allocated memory where available. The first T4 measurements are preserved in the manuscript evidence.
 
 These follow-ups require full Outputs, not just compact summaries. For external shared caches,
 pass `post_run`; see the [follow-up instructions](docs/kaggle.md#follow-up-direct-target-contrasts-and-an-augmentation-matched-static-control).
@@ -105,6 +117,7 @@ No base retraining is needed to regenerate the manuscript plots:
 ```bash
 python paper/build_tables.py
 python paper/build_figures.py
+python paper/build_followups.py
 ```
 
 ## Local installation
