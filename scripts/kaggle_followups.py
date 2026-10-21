@@ -104,15 +104,18 @@ def cache_files(post):
     ]
 
 
-def cache_source(root, study, cfg):
+def cache_source(root, study, cfg, cache_root=None):
     internal = study / "shared"
-    if (internal / "cache").exists():
+    if all(path.exists() for path in cache_files(internal)):
         return internal
     hint = Path(str(cfg.get("post_run") or "/nonexistent-rfd-cache"))
-    if hint.is_relative_to(root) and (hint / "cache").exists():
+    if hint.is_relative_to(root) and all(path.exists() for path in cache_files(hint)):
         return hint
     matches = []
-    for marker in sorted(root.rglob("test_complete.json")):
+    markers = list(root.rglob("test_complete.json"))
+    if cache_root is not None and Path(cache_root).exists():
+        markers += list(Path(cache_root).rglob("test_complete.json"))
+    for marker in sorted(set(markers)):
         if marker.parent.name != "cache":
             continue
         post = marker.parent.parent
@@ -132,7 +135,7 @@ def cache_source(root, study, cfg):
     return matches[0] if matches else internal
 
 
-def inspect_inputs(root, expected=None):
+def inspect_inputs(root, expected=None, cache_root=None):
     """Run the same full preflight used by execution, without a GPU or training."""
     root = Path(root).resolve()
     expected = EXPECTED if expected is None else expected
@@ -143,7 +146,7 @@ def inspect_inputs(root, expected=None):
         if key in expected:
             try:
                 base = base_source(root, study, cfg)
-                post = cache_source(root, study, cfg)
+                post = cache_source(root, study, cfg, cache_root)
             except ValueError as exc:
                 base, post = study.parent / "base", study / "shared"
                 reasons.append(str(exc))
@@ -202,10 +205,10 @@ def inspect_inputs(root, expected=None):
     )
 
 
-def discover(root, expected=None):
+def discover(root, expected=None, cache_root=None):
     """Consume the exact same verified rows exposed by --inspect-inputs."""
     expected = EXPECTED if expected is None else expected
-    report = inspect_inputs(root, expected)
+    report = inspect_inputs(root, expected, cache_root)
     found = {}
     for row in report["studies"]:
         if not row["valid"]:
@@ -298,15 +301,22 @@ def main():
     parser.add_argument("--profile", choices=["replications", "remaining"],
                         default="replications")
     parser.add_argument("--max-hours", type=float, default=6)
+    parser.add_argument("--jobs", nargs="+", help="Explicit subset of profile jobs; recorded in batch config")
+    parser.add_argument("--cache-root", type=Path, help="Additional local recovered-cache directory")
     parser.add_argument("--inspect-inputs", action="store_true",
                         help="Print attached study identities and missing files; no GPU or experiment")
     args = parser.parse_args()
     expected = EXPECTED if args.profile == "replications" else REMAINING
+    if args.jobs:
+        unknown = set(args.jobs) - expected.keys()
+        if unknown or len(set(args.jobs)) != len(args.jobs):
+            parser.error("Unknown or duplicate jobs: " + str(args.jobs))
+        expected = {key: expected[key] for key in args.jobs}
     if args.output is None:
         args.output = Path("/kaggle/working/rfd_followups" if args.profile == "replications"
                            else "/kaggle/working/rfd_cifar_controls_remaining")
     if args.inspect_inputs:
-        print(json.dumps(inspect_inputs(args.input_root, expected), indent=2))
+        print(json.dumps(inspect_inputs(args.input_root, expected, args.cache_root), indent=2))
         return
     if args.max_hours <= 0:
         raise ValueError("Positive time budget required")
@@ -316,7 +326,7 @@ def main():
     torch.set_num_threads(4)
     root = Path(__file__).resolve().parents[1]
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root).decode().strip()
-    jobs = discover(args.input_root, expected)
+    jobs = discover(args.input_root, expected, args.cache_root)
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
     print("Verified source bases:", json.dumps(jobs, indent=2), flush=True)

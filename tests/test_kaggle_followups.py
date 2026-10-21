@@ -169,6 +169,20 @@ def test_external_base_and_post_resolve_by_identity(tmp_path, monkeypatch):
     assert row["post"] == str(post)
 
 
+def test_recovered_cache_outside_inputs_resolves(tmp_path, monkeypatch):
+    import shutil
+    inputs = tmp_path / "input"
+    study, model, post, sha = make_external_study(inputs)
+    recovered = tmp_path / "working/recovered"
+    recovered.parent.mkdir()
+    shutil.move(str(post), str(recovered))
+    (study / "shared/cache").mkdir(parents=True)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    row = launcher.discover(inputs, cache_root=recovered.parent)[0]
+    assert row["study"] == str(study) and row["base"] == str(model)
+    assert row["post"] == str(recovered)
+
+
 def test_wrong_external_cache_seed_rejected(tmp_path, monkeypatch):
     _, _, post, sha = make_external_study(tmp_path)
     monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
