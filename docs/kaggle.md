@@ -465,3 +465,32 @@ previous two-base batch (41.89 minutes). This is an estimate, not a measured
 three-base duration or a guaranteed runtime. The six-hour admission budget is
 retained. The original extended study adds more pre-existing head score files to
 read for direct contrasts; no additional temporal windows are selected here.
+
+### Mounted inputs with missing historical caches
+
+Do not download entire historical Notebook Outputs with KaggleHub just to
+recover a missing shared probability cache. When the relevant Inputs are already
+mounted, run:
+
+    python scripts/kaggle_available_controls.py
+
+This launcher performs no Notebook download. It runs each verified remaining
+base independently and records unavailable jobs as blocked in its combined
+summary, rather than reporting the full three-base campaign as complete. The
+output is `/kaggle/working/rfd_cifar_controls_recovery/followup_summary.zip`.
+
+If a completed study retains `native_features/{val,test}_probs.npy` and its
+original alignment records, it can recover a local shared-cache interface with
+file links. Recovery verifies the base checkpoint, official split IDs, recorded
+zero per-view prediction disagreements, finite normalized probabilities, and
+all saved selected-policy validation/test accuracies. It performs no inference,
+policy selection or fitting. Native FP32 values are not assumed bit-identical to
+the original shared cache; `recovery_provenance.json` explicitly records this
+substitution. Failed identity or numerical checks leave that job blocked.
+Missing heads, incomplete base training, or a missing study cannot be recovered
+by this procedure.
+
+The underlying launcher also accepts an explicit `--jobs` subset and an
+additional `--cache-root` for these local probability inputs. Each job retains
+the same source controls, saved policies and three new static heads. Preserve
+the full Output and compact summary when a subset completes.
