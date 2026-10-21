@@ -6,4 +6,5 @@ RUNS = [
     ("c100_s44", "C100, base 44"),
     ("c10_s42", "C10 Worse, base 42"),
     ("c10_s43", "C10 Worse, base 43"),
+    ("c10_s44", "C10 Worse, base 44"),
 ]
