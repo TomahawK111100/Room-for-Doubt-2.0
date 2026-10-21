@@ -1,0 +1,9 @@
+run_id: cifar10_closeout
+base_seed: 44
+base_split_seed: 42
+max_hours: 8.0
+base_max_hours: 4.5
+study_max_hours: 3.0
+control_max_hours: 2.0
+min_free_gb: 6
+control42_digest: 50f69a185caa1648775992f60035c5d0816f6f4ffe801b3edd685211a939bcae
