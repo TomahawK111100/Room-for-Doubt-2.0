@@ -43,6 +43,10 @@ def make_study(root):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(b"synthetic checkpoint")
     sha = launcher.digest(base / "checkpoints/best.pt")
+    for split in ("val", "test"):
+        (study / "shared/cache" / f"{split}_complete.json").write_text(
+            json.dumps(dict(base_digest=sha, seed=20261015, views=10))
+        )
     OmegaConf.save(OmegaConf.create(dict(
         dataset=dict(name="cifar100n"), base_seed=44, base_digest=sha,
         encoders=["base_resnet50"], target_modes=["early_mean"], seeds=[42],
@@ -128,3 +132,80 @@ def test_same_preflight_for_inspection_and_execution(tmp_path, monkeypatch):
     row = launcher.inspect_inputs(tmp_path)["studies"][0]
     assert row["valid"] and row["checkpoint_digest"] == sha
     assert launcher.discover(tmp_path)[0]["study"] == row["study"]
+
+
+def make_external_study(root):
+    import shutil
+    study, base, sha = make_study(root / "study_output")
+    model = root / "base_output/source_model"
+    model.parent.mkdir()
+    shutil.move(str(base), str(model))
+    OmegaConf.save(OmegaConf.create(dict(
+        model=dict(name="resnet50"), epochs=50, seed=44,
+        dataset=dict(name="cifar100n"),
+    )), model / "config.yaml")
+    post = root / "post_output/original_post"
+    post.parent.mkdir()
+    shutil.move(str(study / "shared"), str(post))
+    cfg = OmegaConf.load(study / "config.yaml")
+    cfg.source_run = "/previous_session/nonexistent_model"
+    cfg.post_run = "/previous_session/nonexistent_post"
+    cfg.inference_seed = 20261015
+    cfg.view_counts = [1, 5, 10]
+    OmegaConf.save(cfg, study / "config.yaml")
+    for split in ("val", "test"):
+        (post / "cache" / f"{split}_complete.json").write_text(json.dumps(
+            dict(base_digest=sha, seed=20261015, views=10)
+        ))
+    return study, model, post, sha
+
+
+def test_external_base_and_post_resolve_by_identity(tmp_path, monkeypatch):
+    study, model, post, sha = make_external_study(tmp_path)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    row = launcher.discover(tmp_path)[0]
+    assert row["study"] == str(study)
+    assert row["base"] == str(model)
+    assert row["post"] == str(post)
+
+
+def test_wrong_external_cache_seed_rejected(tmp_path, monkeypatch):
+    _, _, post, sha = make_external_study(tmp_path)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    path = post / "cache/val_complete.json"
+    data = json.loads(path.read_text())
+    data["seed"] += 1
+    path.write_text(json.dumps(data))
+    with pytest.raises(ValueError, match="Missing complete Outputs"):
+        launcher.discover(tmp_path)
+
+
+def test_ambiguous_external_post_rejected(tmp_path, monkeypatch):
+    import shutil
+    _, _, post, sha = make_external_study(tmp_path)
+    shutil.copytree(post, tmp_path / "duplicate_post")
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    with pytest.raises(ValueError, match="Ambiguous shared cache"):
+        launcher.discover(tmp_path)
+
+def test_internal_cache_provenance_checked_before_computation(tmp_path, monkeypatch):
+    study, _, sha = make_study(tmp_path)
+    monkeypatch.setattr(launcher, "EXPECTED", dict(cifar100n_seed44=sha))
+    path = study / "shared/cache/val_complete.json"
+    protocol = json.loads(path.read_text())
+    protocol["base_digest"] = "different model"
+    path.write_text(json.dumps(protocol))
+    with pytest.raises(ValueError, match="val shared cache provenance differs"):
+        launcher.discover(tmp_path)
+
+def test_data_links_recover_after_input_mount_changes(tmp_path):
+    inputs = tmp_path / "input"
+    inputs.mkdir()
+    (inputs / "cifar-10-batches-py").mkdir()
+    (inputs / "CIFAR-10_human.pt").write_bytes(b"observed annotations")
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "CIFAR-10_human.pt").symlink_to(tmp_path / "removed_input")
+    launcher.prepare_data(inputs, data, [dict(dataset="cifar10n")])
+    assert (data / "CIFAR-10_human.pt").read_bytes() == b"observed annotations"
+    assert (data / "cifar-10-batches-py").is_dir()
