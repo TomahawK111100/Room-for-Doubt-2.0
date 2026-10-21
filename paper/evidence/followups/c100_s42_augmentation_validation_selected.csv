@@ -1,0 +1,17 @@
+method,views,temperature,val_noisy_acc
+tta,10,uniform,0.541
+msp,10,uniform,0.541
+gap,10,uniform,0.541
+entropy,10,uniform,0.541
+base_resnet50__early_mean__42,5,0.05,0.548
+base_resnet50__early_mean__43,5,0.02,0.5504
+base_resnet50__early_mean__44,5,0.05,0.5472
+base_resnet50__history_mean__42,10,0.1,0.5436
+base_resnet50__history_mean__43,5,0.02,0.5438
+base_resnet50__history_mean__44,5,0.1,0.5446
+base_resnet50__best_margin__42,10,0.25,0.5422
+base_resnet50__best_margin__43,10,0.5,0.5422
+base_resnet50__best_margin__44,10,1.0,0.5412
+base_resnet50__best_augmented_mean__42,10,0.5,0.5422
+base_resnet50__best_augmented_mean__43,10,0.5,0.5414
+base_resnet50__best_augmented_mean__44,10,1.0,0.5412

@@ -1,0 +1,10 @@
+encoder,head_seed,reference,proposed,comparison,samples,error_event,reference_views,proposed_views,gain_pp,ci_low_pp,ci_high_pp,auroc_difference,auroc_ci_low,auroc_ci_high
+base_resnet50,42,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,1.16,0.73,1.58,0.036718941552678075,0.03040486709015292,0.04263179857019533
+base_resnet50,42,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.52,0.06999999999999999,0.9402499999999987,0.13210903296679444,0.12204742498980505,0.14243724060914073
+base_resnet50,42,best_augmented_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,1.16,0.72,1.58,0.037445607988068175,0.031129036702581582,0.04324853203240189
+base_resnet50,43,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.9400000000000001,0.44,1.4500000000000002,0.03279049722442495,0.026843686348618414,0.038664887911602504
+base_resnet50,43,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.35000000000000003,-0.11,0.79,0.14481836061855213,0.1339150979733378,0.155941632975498
+base_resnet50,43,best_augmented_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.9400000000000001,0.44,1.4500000000000002,0.0335558688166987,0.02769785505831802,0.03931813425558473
+base_resnet50,44,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.9299999999999999,0.48,1.37,0.03327530924105915,0.02642645930998911,0.039582499396420154
+base_resnet50,44,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.19,-0.22,0.58,0.13502464150081928,0.1241077933220672,0.1460680313665277
+base_resnet50,44,best_augmented_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.9199999999999999,0.48,1.3599999999999999,0.03605588395607162,0.02948140699559216,0.04235037170799027

@@ -1,0 +1,2 @@
+run,operation,base_digest,fitting,inference,bit_identical,frozen_accuracy_checks,source
+c100_s42,reuse_native_fp32_probabilities,74a4b9d71a134bef4032afff26fa5f2d517ae5c769298980fca47033f6a7d355,False,False,False,93,outputs/kaggle_available_controls_import_20261021/recovered_caches/cifar100n_seed42/recovery_provenance.json
