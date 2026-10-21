@@ -430,3 +430,38 @@ this is a retrospective duration, not a guaranteed budget. Existing policies and
 accuracies reproduced. C100 base44 / C10 Worse base43 augmentation-control and T4
 microbenchmark evidence is preserved in the manuscript. Full Outputs are still
 needed for arrays, new checkpoints and raw timing repetitions.
+
+## Remaining three CIFAR controls
+
+Use the fixed profile to extend the same augmentation control and direct target
+contrasts to C100 base42/base43 and C10 Worse base42:
+
+    python scripts/kaggle_followups.py --profile remaining --inspect-inputs
+    python scripts/kaggle_followups.py --profile remaining
+
+All three requested bases must pass preflight before computation. The profile
+does not retrain bases or repeat runtime measurements. It fits three augmented
+static heads per base (nine in total), then reports every declared comparison.
+The outputs live in /kaggle/working/rfd_cifar_controls_remaining and the compact
+export is followup_summary.zip. Full Outputs remain necessary for recovery.
+
+Required Notebook Inputs:
+
+- The completed campaign containing both C100 base43 and C10 Worse base42.
+- The completed extended 42-head feature study for C100 base42.
+- The original C100 base42 training Output (room-for-doubttt).
+- The original post-processing Output containing C100 base42 shared view caches
+  (fork-of-room-for-doubttt).
+
+The original C100 base42 study refers to a base and cache stored in separate
+notebooks; they are not sibling directories. Preflight resolves the actual base
+by checkpoint digest and the external cache by saved base digest, inference seed
+and view budget. Existing exact mounted paths are preferred when available.
+It refuses ambiguous sources. The downstream cache reader additionally validates
+sample IDs, labels, feature provenance and probability dimensions.
+
+Allow roughly 1--2 hours on a comparable T4 session, extrapolated from the
+previous two-base batch (41.89 minutes). This is an estimate, not a measured
+three-base duration or a guaranteed runtime. The six-hour admission budget is
+retained. The original extended study adds more pre-existing head score files to
+read for direct contrasts; no additional temporal windows are selected here.
