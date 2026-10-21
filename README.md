@@ -46,12 +46,19 @@ claimed. Static and temporal target construction also differs in augmentation
 and measurement conditions; the target comparison does not isolate a causal
 benefit from time alone.
 
-A follow-up on CIFAR-100N base44 and CIFAR-10N Worse base43 controls the
-static target's augmentation distribution: five training-style views at the
-fixed selected checkpoint. Augmented-static obtains **69.57% / 90.61%**, versus
-Early-5 **70.09% / 91.28%**. All three C10 paired accuracy intervals are positive;
-two of three C100 intervals include zero. This addresses augmentation acquisition,
-but does not isolate time from online weights or the CE/GCE schedule.
+An augmentation-matched static control now covers all three CIFAR-100N bases
+and CIFAR-10N Worse base43. CIFAR-100N augmented-static accuracies are
+**70.32% / 69.27% / 69.57%** (bases42/43/44), versus Early-5
+**71.08% / 70.28% / 70.09%**. The mean per-base advantage is **+0.76 pp**;
+seven of nine conditional head-level accuracy intervals are positive, while two
+on base44 include zero. On C10 base43, the control obtains **90.61%** versus
+**91.28%**, with all three intervals positive. All twelve original-view AUROC
+difference intervals are positive. These heads span four independent bases.
+The C10 base42 augmentation control remains blocked by missing verified study
+inputs. The control addresses augmentation acquisition, but does not isolate
+time from online weights or the CE/GCE schedule. C100 base42 uses a recovered
+native FP32 probability cache with recorded provenance and reproduced frozen
+accuracies; bit-identical shared probabilities are not claimed.
 
 A preliminary one-session Tesla T4 microbenchmark finds close equal-view timing:
 including preprocessing, C100 five-view uniform/Early-5 medians are **20.25/20.36 ms**;
@@ -95,7 +102,7 @@ Inputs, independent-base campaigns, checkpoint recovery and memory bounds.
 - `python scripts/run.py run-kaggle-campaign`: run bounded independent-base jobs;
   dataset-specific profiles and their launchers are documented in the Kaggle guide.
 
-Two follow-up commands have completed on C100 base44 and C10 Worse base43:
+Two follow-up commands have completed on C100 bases42/43/44 and C10 Worse base43:
 
 - `python scripts/run.py contrast-feature-targets study_run=/path/to/full/study`:
   direct paired Early-5 versus Static/History-50 accuracy and AUROC comparisons,

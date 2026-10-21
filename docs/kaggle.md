@@ -494,3 +494,11 @@ The underlying launcher also accepts an explicit `--jobs` subset and an
 additional `--cache-root` for these local probability inputs. Each job retains
 the same source controls, saved policies and three new static heads. Preserve
 the full Output and compact summary when a subset completes.
+
+The 21 October recovery batch completed C100 base42/base43 paired and
+augmentation stages in40.68 summed stage minutes. C10042 native-cache recovery
+passed all93 frozen validation/test accuracy checks. C10 base42 remained
+blocked; no completed result is inferred for it. The compact summary was
+imported into outputs/kaggle_available_controls_import_20261021/. Public
+manuscript evidence now includes augmentation controls on all three C100 bases
+and C10 base43. The full checkpoint/prediction arrays remain outside Git.

@@ -1,0 +1,13 @@
+encoder,head_seed,reference,proposed,comparison,samples,error_event,reference_views,proposed_views,gain_pp,ci_low_pp,ci_high_pp,auroc_difference,auroc_ci_low,auroc_ci_high
+resnet18,42,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,10,0.03,-0.04,0.1,0.046282025818053185,0.04051282736781785,0.05199126354897608
+resnet18,42,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,10,-0.03,-0.22999999999999998,0.18024999999999863,0.09705596230526126,0.08704759034931384,0.10675168214865115
+resnet18,43,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,10,0.0,0.0,0.0,0.05471057250724587,0.04855054527327408,0.06079619793774978
+resnet18,43,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,10,0.0,0.0,0.0,0.10480741520390202,0.09412026182806361,0.11521976489985404
+resnet18,44,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,10,0.18,0.0,0.3602499999999986,0.05026966626859919,0.043820121409791565,0.05645346701266742
+resnet18,44,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,10,0.16999999999999998,-0.02,0.35000000000000003,0.10750717618019412,0.09688541961483461,0.11849859163928245
+base_resnet50,42,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,1.16,0.73,1.58,0.036718941552678075,0.03040486709015292,0.04263179857019533
+base_resnet50,42,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.52,0.06999999999999999,0.9402499999999987,0.13210903296679444,0.12204742498980505,0.14243724060914073
+base_resnet50,43,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.9400000000000001,0.44,1.4500000000000002,0.03279049722442495,0.026843686348618414,0.038664887911602504
+base_resnet50,43,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.35000000000000003,-0.11,0.79,0.14481836061855213,0.1339150979733378,0.155941632975498
+base_resnet50,44,best_margin,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.9299999999999999,0.48,1.37,0.03327530924105915,0.02642645930998911,0.039582499396420154
+base_resnet50,44,history_mean,early_mean,own_validation_selected_policy,10000,original_view_base_error,10,5,0.19,-0.22,0.58,0.13502464150081928,0.1241077933220672,0.1460680313665277

@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 from build_figures import ROOT, check_evidence, save, style
 from build_tables import table
 
-RUNS = [("c100_s44", "C100/44"), ("c10_s43", "C10/43")]
+RUNS = [("c100_s42", "C100/42"), ("c100_s43", "C100/43"),
+        ("c100_s44", "C100/44"), ("c10_s43", "C10/43")]
+RUNTIME_RUNS = [("c100_s44", "C100/44"), ("c10_s43", "C10/43")]
 LABELS = {
     "best_margin": "Static",
     "best_augmented_mean": "Aug-static",
@@ -34,7 +36,8 @@ def main():
                      if r["method"] == "base_resnet50__" + mode)
             cells.append(f"{100*float(r['acc']):.2f} $\\pm$ {100*float(r['acc_sd']):.2f}")
         rows.append(cells)
-    table("followup_accuracy.tex", "lrr", "Target & C100 (44) & C10 Worse (43)", rows)
+    table("followup_accuracy.tex", "lrrrr",
+          "Target & C100 (42) & C100 (43) & C100 (44) & C10 Worse (43)", rows)
 
     rows = []
     for run, label in RUNS:
@@ -51,7 +54,7 @@ def main():
           "Run & Seed & Reference & $V_r/V_e$ & Gain & 95\\% CI & $\\Delta$AUROC", rows)
 
     rows = []
-    for run, label in RUNS:
+    for run, label in RUNTIME_RUNS:
         source = read(run, "runtime", "runtime_cost")
         for method, views in (("base", 1), ("uniform", 5), ("early", 5),
                               ("uniform", 10), ("early", 10)):
@@ -70,7 +73,7 @@ def main():
           "Run & Method & Views & Model ms & With prep. ms & Peak MB", rows)
 
     plt.rcParams.update({"font.size": 9, "pdf.fonttype": 42})
-    fig, ax = plt.subplots(figsize=(7.2, 3.8), layout="constrained")
+    fig, ax = plt.subplots(figsize=(7.2, 5.6), layout="constrained")
     index = 0
     labels = []
     for run, title in RUNS:

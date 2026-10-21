@@ -66,13 +66,31 @@ are excluded from Git.
 Public CSV snapshots use LF line endings; numerical values are retained from
 the imported outputs. `evidence/file_manifest.csv` records their public-file hashes.
 
-## Completed follow-up evidence (21 October import)
+## First follow-up batch (21 October import)
 
 The evidence/followups folder preserves direct comparisons, augmentation-control selection/results,
 and full compact T4 timing tables for C100 base44 and C10 Worse base43. Source paths,
 base digests and run commit are in its sources.csv; public bytes are covered by the
 main evidence hash manifest. The build_followups.py script regenerates three tables and the
 paired augmentation-control figure. Intervals condition on each fitted base/head;
-only one base per dataset receives the new control. Runtime is one fixed-order session,
+that first batch covers one base per dataset; later controls are recorded below. Runtime is one fixed-order session,
 not an independently replicated performance guarantee. Full checkpoints, raw predictions
 and raw timing repetitions remain in Kaggle Outputs, outside the compact evidence.
+
+## Additional CIFAR-100N controls (21 October)
+
+Both added base42/base43 paired and augmentation stages completed; the combined
+campaign is partial because C10 base42 remains blocked. The new evidence consists of ten stage tables plus two cache-recovery CSVs,
+preserved under evidence/followups/. Full imports remain local
+under outputs/kaggle_available_controls_import_20261021/. The review verifies
+42 contrast point estimates, existing selected policies/accuracies, and 93
+reported native-cache recovery accuracy checks. It cannot recompute bootstrap
+intervals or inspect actual weights from the compact export.
+
+The augmentation-control figure and tables now cover C100 bases42/43/44 and
+C10 Worse base43. Seven of nine C100 head intervals exclude zero; two on base44
+include zero. Mean Early-5-minus-augmented-static gain across the three C100
+bases is 0.76 percentage points (sample SD 0.24), with heads averaged within base.
+Cache recovery uses saved native FP32 arrays and explicitly does not claim
+bit-identical original shared probabilities. The single-session runtime evidence
+is unchanged and still covers only C10044 and C10 43.
