@@ -35,7 +35,7 @@ def load_completed_run(source, observed_labels):
         raise ValueError("Require a completed 50-epoch base run, not a partial run")
     if config["model"]["name"] != "resnet50" or config["image_size"] < 1:
         raise ValueError("Unsupported base architecture or preprocessing")
-    classes = {"cifar10n": 10, "cifar100n": 100}
+    classes = {"cifar10n": 10, "cifar100n": 100, "animal10n": 10}
     if classes.get(config["dataset"]["name"]) != config["dataset"]["num_classes"]:
         raise ValueError("Source dataset/class-count mismatch")
     checkpoint_path = source / "checkpoints/best.pt"

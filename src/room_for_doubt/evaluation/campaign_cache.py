@@ -14,13 +14,18 @@ from room_for_doubt.data.cifar_noisy import CIFAR_MEAN, CIFAR_STD
 
 
 def make_views(image, count, seed):
+    if image.shape not in ((32, 32, 3), (64, 64, 3)) or count < 1:
+        raise ValueError("Require RGB 32px/64px images and a positive view count")
+    size, padding = image.shape[0], image.shape[0] // 8
     rng = np.random.default_rng(seed)
     result = [image]
     for _ in range(count - 1):
         view = image[:, ::-1] if rng.random() < 0.5 else image
-        view = np.pad(view, ((4, 4), (4, 4), (0, 0)), mode="reflect")
-        y, x = rng.integers(0, 9, size=2)
-        result.append(view[y : y + 32, x : x + 32].copy())
+        view = np.pad(
+            view, ((padding, padding), (padding, padding), (0, 0)), mode="reflect"
+        )
+        y, x = rng.integers(0, 2 * padding + 1, size=2)
+        result.append(view[y : y + size, x : x + size].copy())
     return result
 
 

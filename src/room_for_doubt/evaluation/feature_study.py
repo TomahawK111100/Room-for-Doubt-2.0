@@ -131,6 +131,8 @@ def evaluate_policies(cfg, out, probabilities, labels, projected, device, frozen
         raise ValueError("All policies must be frozen before final evaluation")
     scores = score_heads("test", cfg, out, probabilities, projected, device)
     base = probabilities[:, 0]
+    selected_tta = weighted(probabilities, scores, frozen["selected"]["tta"])
+    bootstrap_seed = int(cfg.get("bootstrap_seed", 20261015))
     errors = base.argmax(1) != labels
     rows = []
     for policy in [dict(method="base", views=1, temperature="uniform")] + frozen[
@@ -143,6 +145,8 @@ def evaluate_policies(cfg, out, probabilities, labels, projected, device, frozen
             method=name,
             views=count,
             temperature=policy["temperature"],
+            tta_reference_views=count,
+            selected_tta_reference_views=frozen["selected"]["tta"]["views"],
             selected_by_validation=name == "base" or frozen["selected"][name] == policy,
             **probability_metrics(labels, p),
         )
@@ -157,13 +161,14 @@ def evaluate_policies(cfg, out, probabilities, labels, projected, device, frozen
         for reference, q in (
             ("base", base),
             ("tta", probabilities[:, :count].mean(1)),
+            ("tta_selected", selected_tta),
             ("msp", weighted(probabilities, scores, msp_policy)),
         ):
             row.update(
                 {
                     f"{k}_vs_{reference}": v
                     for k, v in paired_accuracy_interval(
-                        labels, q.argmax(1), p.argmax(1)
+                        labels, q.argmax(1), p.argmax(1), seed=bootstrap_seed
                     ).items()
                 }
             )
@@ -187,6 +192,9 @@ def evaluate_policies(cfg, out, probabilities, labels, projected, device, frozen
                 else 0.0,
                 error_auroc=float(np.mean([r["base_error_auroc"] for r in group])),
                 gain_vs_base_pp=float(np.mean([r["gain_pp_vs_base"] for r in group])),
+                gain_vs_selected_tta_pp=float(
+                    np.mean([r["gain_pp_vs_tta_selected"] for r in group])
+                ),
                 selected_views="/".join(str(r["views"]) for r in group),
             )
         )

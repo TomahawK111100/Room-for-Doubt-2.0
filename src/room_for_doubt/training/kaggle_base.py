@@ -20,6 +20,7 @@ from hydra.core.hydra_config import HydraConfig
 from hydra.utils import to_absolute_path
 from omegaconf import OmegaConf
 from room_for_doubt.data.cifar_noisy import get_train_val_indices, load_observed_labels
+from room_for_doubt.data.animal10n import Animal10N, verify_identity
 from room_for_doubt.data.meta_splits import reserve_meta_splits
 from room_for_doubt.data.observed_images import ObservedImages, imagenet_transform
 from room_for_doubt.models.robust_classifier import (
@@ -134,12 +135,19 @@ def train(cfg, out):
         )
     if cfg.model.name != "resnet50" or cfg.epochs < 1 or not 0 < cfg.loss.q <= 1:
         raise ValueError("Invalid model, epoch count or GCE q")
-    expected = {"cifar10n": 10, "cifar100n": 100}
+    expected = {"cifar10n": 10, "cifar100n": 100, "animal10n": 10}
     if cfg.dataset.num_classes != expected[cfg.dataset.name]:
         raise ValueError("Dataset class count mismatch")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if cfg.require_cuda and device.type != "cuda":
-        raise RuntimeError("Enable GPU T4 x2 in Kaggle Settings before running")
+        raise RuntimeError("Enable a CUDA GPU before running")
+    if (
+        cfg.get("expected_cuda_devices") is not None
+        and torch.cuda.device_count() != cfg.expected_cuda_devices
+    ):
+        raise RuntimeError(
+            "CUDA device count differs from this run's frozen base protocol"
+        )
     amp = device.type == "cuda"
     torch.set_num_threads(4)
     random.seed(cfg.seed)
@@ -150,9 +158,12 @@ def train(cfg, out):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     OmegaConf.save(cfg, out / "config.yaml", resolve=True)
-    cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100}[cfg.dataset.name]
+    cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100, "animal10n": Animal10N}[
+        cfg.dataset.name
+    ]
     root = to_absolute_path(cfg.data_dir)
     raw = cls(root, train=True, download=True)
+    verify_identity(raw, config)
     noisy = load_observed_labels(root, cfg.dataset.name, cfg.dataset.noisy_split)
     train_ids, val_ids = get_train_val_indices(
         len(raw.data), cfg.dataset.val_ratio, base_split_seed(config)
@@ -161,7 +172,10 @@ def train(cfg, out):
         artifacts / "split_ids.npz", train_ids=train_ids, val_ids=val_ids
     )
     train_set = ObservedImages(
-        raw.data, noisy, train_ids, imagenet_transform(cfg.image_size, True)
+        raw.data,
+        noisy,
+        train_ids,
+        imagenet_transform(cfg.image_size, True, cfg.dataset.get("native_size", 32)),
     )
     val_set = ObservedImages(
         raw.data, noisy, val_ids, imagenet_transform(cfg.image_size)
@@ -414,10 +428,11 @@ def train(cfg, out):
         val_noisy_acc=val["accuracy"],
         test_acc=test_metrics["accuracy"],
         test_loss=test_metrics["loss"],
-        target_70_reached=test_metrics["accuracy"] >= 0.70,
         trajectory_samples=len(train_ids),
         trajectory_epochs=cfg.epochs,
     )
+    if cfg.dataset.name != "animal10n":
+        metrics["target_70_reached"] = test_metrics["accuracy"] >= 0.70
     save_metrics(out, metrics)
     save_run_metadata(
         out, cfg.run_id, config, **info, best_epoch=best_epoch, best_val_loss=best_loss
@@ -428,7 +443,7 @@ def train(cfg, out):
         config,
         metrics,
         dict(info, best_epoch=best_epoch, best_val_loss=best_loss),
-        "One base seed. ImageNet-pretrained ResNet50 with CE warmup then GCE; minimum noisy-validation CE selects checkpoint. Clean training labels unused. Train-time margins include augmentation and changing minibatch weights; use the saved epoch axis. No claim that 70% is guaranteed. New checkpoint/preprocessing are not compatible with the historical ResNet34 evaluation loader. Meta heads must be retrained for this base.",
+        "One base seed. ImageNet-pretrained ResNet50 with CE warmup then GCE; minimum noisy-validation CE selects checkpoint. Clean training labels unused. Train-time margins include augmentation and changing minibatch weights; use the saved epoch axis. No accuracy threshold defines completion. New checkpoint/preprocessing are not compatible with the historical ResNet34 evaluation loader. Meta heads must be retrained for this base.",
     )
     print(json.dumps(metrics, indent=2), flush=True)
     return metrics

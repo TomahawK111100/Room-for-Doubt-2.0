@@ -22,6 +22,7 @@ def augmented_margin(
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     ids, labels = bundle["data"]["sample_ids"], bundle["data"]["noisy_labels"]
+    native = bundle["config"].get("dataset", {}).get("native_size", 32)
     spec = dict(
         base_digest=bundle["checkpoint_digest"],
         views=int(views),
@@ -30,7 +31,7 @@ def augmented_margin(
         observed_labels_sha256=hashlib.sha256(labels.tobytes()).hexdigest(),
         image_size=bundle["config"]["image_size"],
         precision="fp32",
-        transform="RandomCrop32_padding4_constant_then_RandomHorizontalFlip_then_imagenet_resize_v1",
+        transform=f"RandomCrop{native}_padding{native // 8}_constant_then_RandomHorizontalFlip_then_imagenet_resize_v1",
     )
     protocol, complete, progress = [
         out / (n + ".json") for n in ("protocol", "complete", "progress")
@@ -65,7 +66,9 @@ def augmented_margin(
         raise ValueError("Invalid augmented margin resume position")
     with torch.random.fork_rng(devices=[]):
         model = restore_base(bundle, device)
-    transform = imagenet_transform(bundle["config"]["image_size"], train=True)
+    transform = imagenet_transform(
+        bundle["config"]["image_size"], train=True, native_size=native
+    )
     # batch_size counts expanded views, not source images.
     per_batch = min(batch_size, 64) // views
     for row in range(start, len(ids), per_batch):

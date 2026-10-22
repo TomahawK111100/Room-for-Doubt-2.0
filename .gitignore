@@ -90,6 +90,9 @@ aris_repo/
 !/docs/kaggle.md
 !/docs/reproduction.md
 !/docs/repository_layout.md
+!/docs/animal10n_protocol.md
+/idea-stage/
+/MANIFEST.md
 
 # Manuscript archive and private review material; editable revision is public-ready
 /paper/archive/
