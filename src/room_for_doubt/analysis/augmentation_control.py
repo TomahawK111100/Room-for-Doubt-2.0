@@ -12,6 +12,7 @@ from omegaconf import OmegaConf
 from torchvision.datasets import CIFAR10, CIFAR100
 from room_for_doubt.analysis.feature_study import export
 from room_for_doubt.data.cifar_noisy import load_observed_labels
+from room_for_doubt.data.animal10n import Animal10N, verify_identity
 from room_for_doubt.data.feature_artifacts import completed_study, shared_split
 from room_for_doubt.data.kaggle_artifacts import load_completed_run, checkpoint_digest
 from room_for_doubt.inference.augmented_margin import augmented_margin
@@ -140,7 +141,7 @@ def run_control(launch, out):
             metadata,
             notes=(
                 "Fixed selected checkpoint; five new deterministic draws from the actual training "
-                "RandomCrop(32,padding=4,constant) then horizontal-flip distribution. These are not "
+                "native-size RandomCrop with one-eighth constant padding, then horizontal-flip distribution. These are not "
                 "the original training RNG draws. Only observed labels construct targets. "
                 "Existing train-only PCA, image features and nine original heads are reused "
                 "(three heads per original target when three seeds are present). Only the augmented "
@@ -177,8 +178,11 @@ def run_control(launch, out):
             raise ValueError("Existing control scientific configuration differs")
     OmegaConf.save(cfg, old_config, resolve=True)
     try:
-        cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100}[cfg.dataset.name]
+        cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100, "animal10n": Animal10N}[
+            cfg.dataset.name
+        ]
         raw = cls(cfg.data_dir, train=True, download=False)
+        verify_identity(raw, dict(bundle["config"], data_dir=str(cfg.data_dir)))
         values = augmented_margin(
             bundle,
             raw.data,

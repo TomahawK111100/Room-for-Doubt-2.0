@@ -71,6 +71,23 @@ timing intervals limit interpretation of small differences. No ensemble is timed
 [Editable manuscript, compact evidence and figure generation](paper/README.md).
 All displayed figures and tables can be regenerated without training or weights.
 
+## Animal-10N pilot (prepared, not run)
+
+The CIFAR recipe is frozen for a prospective Animal-10N pilot: seed42 first,
+then planned independent bases43/44. The [protocol](docs/animal10n_protocol.md)
+fixes the splits,50-epoch base, Early-5 target, matched static/history controls,
+head seeds, shared views, validation selection and reporting of negative results.
+[Machine-readable settings](configs/animal10n_pilot.yaml) are copied into every run.
+
+`python scripts/animal10n_pilot.py --input-root /path/to/data --output outputs/animal10n_seed42 --inspect-only`
+audits the documented official binary release without fitting or requiring GPU.
+Remove `--inspect-only` to run the complete pilot on two visible CUDA GPUs.
+No CIFAR weights or old Kaggle notebook Outputs are needed. Native64px crops
+are used; CIFAR32px view generation remains unchanged. The dataset has no full
+clean-training-label vector, so train-noise diagnostics are explicitly unavailable.
+The archive and a real CUDA sanity run are still pending; synthetic CPU tests
+are not Animal-10N accuracy results.
+
 ## How the project evolved
 
 The original ICOMP study explored full-trajectory regression / conditional flow

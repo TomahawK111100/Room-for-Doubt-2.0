@@ -104,6 +104,12 @@ def load_observed_labels(
     data_dir: str, dataset_name: str, noisy_split: str
 ) -> np.ndarray:
     """Load observed annotations without requiring a clean_label field."""
+    if dataset_name == "animal10n":
+        from room_for_doubt.data.animal10n import Animal10N
+
+        if noisy_split != "human":
+            raise ValueError("Animal-10N exposes only the original human labels")
+        return Animal10N(data_dir, train=True).targets
     return _load_annotation_fields(data_dir, dataset_name, noisy_split, False)[0]
 
 

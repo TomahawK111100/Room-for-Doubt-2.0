@@ -13,6 +13,7 @@ from omegaconf import OmegaConf
 from torchvision.datasets import CIFAR10, CIFAR100
 from room_for_doubt.analysis.kaggle_diagnostics import check_post
 from room_for_doubt.data.cifar_noisy import load_observed_labels
+from room_for_doubt.data.animal10n import Animal10N, verify_identity
 from room_for_doubt.data.kaggle_artifacts import load_completed_run
 from room_for_doubt.inference.classifier_features import (
     cache_classifier_features,
@@ -50,8 +51,8 @@ def export(out, cfg, metrics, metadata, notes=None):
         "ResNet18 uses external ImageNet initialization; ResNet50 uses the selected, noisy-label-finetuned base. "
         "This distinguishes representation pipelines, not solely architecture. "
         "All temperatures AND view budgets are selected on noisy validation; ties prefer fewer views and uniform weights. "
-        "Clean test and training-label correctness are accessed after the complete policy marker. "
-        "Train-noise evaluation uses base-seen images held out from meta fitting. "
+        "Clean test is accessed after the complete policy marker. "
+        "Train-noise evaluation uses base-seen images held out from meta fitting only where clean training labels exist; Animal-10N has none and skips it. "
         "Confidence intervals are nominal, conditional on one base, and uncorrected for multiple comparisons. "
         "No base retraining or test-based method selection. Static original-image targets and train-time augmented history differ in acquisition. "
         "Matched heads share parameter count; these new PCA heads are not identical to previous unprojected ResNet18 heads."
@@ -182,7 +183,9 @@ def run_study(cfg, out):
             raise ValueError("Existing feature-study scientific configuration differs")
     OmegaConf.save(cfg, config_path, resolve=True)
     device = choose_device(cfg.device)
-    cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100}[cfg.dataset.name]
+    cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100, "animal10n": Animal10N}[
+        cfg.dataset.name
+    ]
     meta = dict(
         base_seed=cfg.base_seed,
         seed=list(cfg.seeds),
@@ -214,6 +217,7 @@ def run_study(cfg, out):
 
     try:
         raw = cls(cfg.data_dir, train=True, download=not supplied_post)
+        verify_identity(raw, dict(bundle["config"], data_dir=str(cfg.data_dir)))
         if not supplied_post:
             prepare_features(bundle, raw.data, post / "features", cfg, device)
             with np.load(post / "features/features.npz") as f:
@@ -350,7 +354,10 @@ def run_study(cfg, out):
             cfg, out, test_probs, test_labels, test_features, device, frozen
         )
         metrics["test_evaluated"] = True
-        noise_and_epoch_profile(cfg, bundle, out, raw.targets)
+        if cfg.dataset.name != "animal10n":
+            noise_and_epoch_profile(cfg, bundle, out, raw.targets)
+        else:
+            metrics["train_noise_diagnostic"] = "unavailable_no_clean_training_labels"
         metrics.update(
             status="complete",
             completed_stage="all_study_stages_complete",

@@ -23,9 +23,14 @@ class ObservedImages(Dataset):
         )
 
 
-def imagenet_transform(size, train=False):
+def imagenet_transform(size, train=False, native_size=32):
+    if native_size not in (32, 64):
+        raise ValueError("Supported native crop sizes are 32 and 64")
     ops = (
-        [transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip()]
+        [
+            transforms.RandomCrop(native_size, padding=native_size // 8),
+            transforms.RandomHorizontalFlip(),
+        ]
         if train
         else []
     )

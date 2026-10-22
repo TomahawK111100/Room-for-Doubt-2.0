@@ -555,3 +555,26 @@ seeds42/43/44 on both datasets. This closes those scheduled CIFAR runs; it does
 not add a new inference timing session or remove the exploratory-test limitation.
 Preserve the full seed44 Output as well: the compact archive contains no model
 weights or raw predictions and cannot support further checkpoint-dependent work.
+
+
+## Animal-10N pilot
+
+The frozen [Animal protocol](animal10n_protocol.md) and
+[config](../configs/animal10n_pilot.yaml) specify the first external pilot.
+Attach the extracted official binary dataset (`data_batch_*.bin` and
+`test_batch.bin`); no historical CIFAR Inputs are required. The official source
+currently distributes access via a form, so the launcher does not fetch
+unverified replacement data. A standard image-folder mirror is not silently
+interpreted as the binary release.
+
+Choose **T4 x2**, Internet on; on a lab server expose two L40s. Keep global
+batch128 and two-device topology fixed. The one launcher performs input audit,
+CUDA AMP/backward sanity,50-epoch base,18-head matched study, paired contrasts
+and3-head augmented-static control in separate processes. It retains partial
+states and produces `animal10n_summary.zip`; preserve the full Output as well.
+No real Animal run has been completed during preparation.
+
+```sh
+python scripts/animal10n_pilot.py --input-root /kaggle/input --output /kaggle/working/rfd_animal10n_seed42 --inspect-only
+python scripts/animal10n_pilot.py --input-root /kaggle/input --output /kaggle/working/rfd_animal10n_seed42
+```

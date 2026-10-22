@@ -1,0 +1,91 @@
+# Frozen before the first Animal-10N fit/test result. Runtime paths are populated by the launcher.
+protocol_version: animal10n_transfer_20261022_v1
+reference_commit: 552c0ac
+pilot_seed: 42
+replication_seeds: [42, 43, 44]
+max_hours: 8.0
+min_free_gb: 8
+base:
+  run_id: animal10n_seed42
+  output_dir: outputs
+  data_dir: null
+  dataset:
+    name: animal10n
+    noisy_split: human
+    num_classes: 10
+    val_ratio: 0.1
+    native_size: 64
+    manifest_sha256: null
+  model: {name: resnet50, weights: IMAGENET1K_V2}
+  image_size: 224
+  seed: 42
+  base_split_seed: 42
+  split_seed: 20261015
+  epochs: 50
+  batch_size: 128
+  num_workers: 4
+  optimizer: {name: SGD, lr: 0.01, momentum: 0.9, weight_decay: 0.0005}
+  loss: {q: 0.7, ce_warmup_epochs: 5}
+  max_hours: 4.5
+  resume: auto
+  require_cuda: true
+  expected_cuda_devices: 2
+study:
+  run_id: feature_study
+  output_dir: outputs
+  source_run: null
+  post_run: null
+  scope: standard
+  data_dir: null
+  dataset: null
+  base_digest: null
+  base_seed: null
+  device: cuda
+  seed: 42
+  seeds: [42, 43, 44]
+  encoders: [resnet18, base_resnet50]
+  target_modes: [early_mean, history_mean, best_margin]
+  early_epochs: 5
+  feature_dim: 512
+  pca_seed: 20261016
+  epochs: 25
+  batch_size: 256
+  image_batch_size: 64
+  learning_rate: 0.001
+  optimizer: adam
+  meta_model: conditioned
+  split_seed: 20261015
+  inference_seed: 20261015
+  bootstrap_seed: 20261019
+  validation_metric: native
+  resume_path: null
+  view_counts: [1, 5, 10]
+  views: 10
+  num_workers: 0
+  temperatures: [0.02, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 1000000.0]
+  max_hours: 3.0
+  min_free_gb: 4
+paired:
+  run_id: paired
+  output_dir: outputs
+  study_run: null
+  post_run: null
+  bootstrap_seed: 20261019
+  auroc_bootstrap_draws: 2000
+augmentation:
+  run_id: augmentation
+  output_dir: outputs
+  study_run: null
+  source_run: null
+  post_run: null
+  data_dir: null
+  device: cuda
+  feature_cache_root: null
+  static_target_digest: null
+  augmentation_views: 5
+  augmentation_seed: 20261019
+  image_batch_size: 64
+  bootstrap_seed: 20261019
+  auroc_bootstrap_draws: 2000
+  max_hours: 2.0
+  min_free_gb: 1
