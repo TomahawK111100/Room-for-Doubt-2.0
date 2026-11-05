@@ -104,6 +104,12 @@ def load_observed_labels(
     data_dir: str, dataset_name: str, noisy_split: str
 ) -> np.ndarray:
     """Load observed annotations without requiring a clean_label field."""
+    if dataset_name == "miniwebvision":
+        from room_for_doubt.data.mini_webvision import MiniWebVision
+
+        if noisy_split != "google_first50":
+            raise ValueError("Mini-WebVision requires Google first50 observed labels")
+        return MiniWebVision(data_dir, train=True).targets
     if dataset_name == "animal10n":
         from room_for_doubt.data.animal10n import Animal10N
 

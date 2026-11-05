@@ -1,0 +1,4 @@
+method,val_noisy_acc_pct,val_noisy_nll,gain_pp
+base_fp32,54.66,1.916,0.0
+residual_student,56.08,1.861,1.42
+snapshot_mean_5,56.56,1.826,1.9

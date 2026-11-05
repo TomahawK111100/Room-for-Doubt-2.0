@@ -14,6 +14,7 @@ from torchvision.datasets import CIFAR10, CIFAR100
 from room_for_doubt.analysis.kaggle_diagnostics import check_post
 from room_for_doubt.data.cifar_noisy import load_observed_labels
 from room_for_doubt.data.animal10n import Animal10N, verify_identity
+from room_for_doubt.data.mini_webvision import MiniWebVision
 from room_for_doubt.data.kaggle_artifacts import load_completed_run
 from room_for_doubt.inference.classifier_features import (
     cache_classifier_features,
@@ -183,9 +184,12 @@ def run_study(cfg, out):
             raise ValueError("Existing feature-study scientific configuration differs")
     OmegaConf.save(cfg, config_path, resolve=True)
     device = choose_device(cfg.device)
-    cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100, "animal10n": Animal10N}[
-        cfg.dataset.name
-    ]
+    cls = {
+        "cifar10n": CIFAR10,
+        "cifar100n": CIFAR100,
+        "animal10n": Animal10N,
+        "miniwebvision": MiniWebVision,
+    }[cfg.dataset.name]
     meta = dict(
         base_seed=cfg.base_seed,
         seed=list(cfg.seeds),
@@ -354,7 +358,7 @@ def run_study(cfg, out):
             cfg, out, test_probs, test_labels, test_features, device, frozen
         )
         metrics["test_evaluated"] = True
-        if cfg.dataset.name != "animal10n":
+        if cfg.dataset.name in {"cifar10n", "cifar100n"}:
             noise_and_epoch_profile(cfg, bundle, out, raw.targets)
         else:
             metrics["train_noise_diagnostic"] = "unavailable_no_clean_training_labels"

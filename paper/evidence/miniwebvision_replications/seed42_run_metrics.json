@@ -1,0 +1,36 @@
+{
+  "status": "complete",
+  "seed": 42,
+  "stages": [
+    {
+      "stage": "base",
+      "status": "complete",
+      "seconds": 3993.371083772,
+      "returncode": 0
+    },
+    {
+      "stage": "study",
+      "status": "complete",
+      "seconds": 2279.2759976360003,
+      "returncode": 0
+    },
+    {
+      "stage": "paired",
+      "status": "complete",
+      "seconds": 15.792428220000147,
+      "returncode": 0
+    },
+    {
+      "stage": "augmentation",
+      "status": "complete",
+      "seconds": 2031.2845724370009,
+      "returncode": 0
+    }
+  ],
+  "test_evaluated": true,
+  "data_manifest_sha256": "1d08d37359e3e8a5ecb38664b02b38d9e08a99cea50e7e91ca624eb4cc004f90",
+  "data_dir": "/kaggle/temp/rfd_miniwebvision_data",
+  "cuda_sanity": "passed_simulation_only",
+  "elapsed_seconds": 8364.755882968,
+  "base_digest": "b044fd365c90d0dda405fea353d86d62d8973ff89ae5ed349a234b0a3994bdba"
+}

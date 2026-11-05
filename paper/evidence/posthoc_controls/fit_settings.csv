@@ -1,0 +1,14 @@
+seed,branch,alpha,best_epoch,fit_seconds,selected_teacher_epoch
+42,early2,0.5,4,20.07,
+42,supervised_head,0.5,1,20.23,
+42,direct_soft5,0.5,12,20.17,
+43,early2,0.5,4,20.13,
+43,supervised_head,0.5,1,20.13,
+43,direct_soft5,0.5,7,20.11,
+44,early2,0.5,3,20.12,
+44,supervised_head,1,1,20.24,
+44,direct_soft5,1,9,20.08,
+42,selected1,0.5,3,20.26,3
+42,independent2,0.5,5,20.34,
+43,independent2,0.5,4,20.5,
+44,independent2,0.5,4,20.56,

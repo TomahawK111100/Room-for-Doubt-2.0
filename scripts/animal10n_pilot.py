@@ -123,7 +123,10 @@ def cuda_sanity(out):
 def make_config(settings, name, out, data, seed, manifest_sha256):
     cfg = OmegaConf.create(OmegaConf.to_container(settings[name], resolve=True))
     if name == "base":
-        cfg.run_id, cfg.output_dir = f"animal10n_seed{seed}", str(out / "base")
+        cfg.run_id, cfg.output_dir = (
+            f"{settings.base.dataset.name}_seed{seed}",
+            str(out / "base"),
+        )
         cfg.data_dir, cfg.seed = str(data), seed
         cfg.dataset.manifest_sha256 = manifest_sha256
     else:
@@ -139,12 +142,13 @@ def make_config(settings, name, out, data, seed, manifest_sha256):
     return cfg
 
 
-def main():
+def main(
+    default_protocol=PROTOCOL, default_output="/kaggle/working/rfd_animal10n_seed42"
+):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-root", type=Path, default=Path("/kaggle/input"))
-    parser.add_argument(
-        "--output", type=Path, default=Path("/kaggle/working/rfd_animal10n_seed42")
-    )
+    parser.add_argument("--output", type=Path, default=Path(default_output))
+    parser.add_argument("--protocol", type=Path, default=default_protocol)
     parser.add_argument("--seed", type=int, choices=[42, 43, 44], default=42)
     parser.add_argument("--inspect-only", action="store_true")
     parser.add_argument("--base-only", action="store_true")
@@ -156,7 +160,19 @@ def main():
         save_metrics,
     )
 
-    settings = OmegaConf.load(PROTOCOL)
+    protocol_path = args.protocol.resolve()
+    settings = OmegaConf.load(protocol_path)
+    dataset_name = settings.base.dataset.name
+    if dataset_name == "miniwebvision":
+        from room_for_doubt.data.mini_webvision import (
+            MiniWebVision as RawDataset,
+            file_manifest,
+            locate_data as find_data,
+        )
+    elif dataset_name == "animal10n":
+        RawDataset, find_data = Animal10N, locate_data
+    else:
+        raise ValueError("Unsupported transfer dataset")
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=True)
     (out / "artifacts").mkdir(exist_ok=True)
@@ -165,7 +181,7 @@ def main():
     config = dict(
         protocol_version=settings.protocol_version,
         seed=args.seed,
-        protocol_sha256=hashlib.sha256(PROTOCOL.read_bytes()).hexdigest(),
+        protocol_sha256=hashlib.sha256(protocol_path.read_bytes()).hexdigest(),
         requested_scope="base_only"
         if args.base_only
         else "base_study_paired_augmentation",
@@ -177,7 +193,7 @@ def main():
             "Existing pilot uses a different frozen protocol or requested scope"
         )
     OmegaConf.save(OmegaConf.create(config), previous, resolve=True)
-    shutil.copy2(PROTOCOL, out / "artifacts/frozen_protocol.yaml")
+    shutil.copy2(protocol_path, out / "artifacts/frozen_protocol.yaml")
 
     def export():
         state["test_evaluated"] = state["test_evaluated"] or test_evaluation_seen(out)
@@ -199,7 +215,7 @@ def main():
             {},
             "Input audit does not fit a model or select a policy. Stage completion requires "
             "saved outputs. Test metrics, if produced by a completed stage, do not select "
-            "targets, view grids, hyperparameters or further dataset choices. Animal-10N "
+            "targets, view grids, hyperparameters or further dataset choices. This dataset "
             "provides no full clean-training-label vector; train-noise detection is unavailable.",
         )
         (out / "morning_summary.txt").write_text(
@@ -211,12 +227,12 @@ def main():
             + "\n"
         )
         with zipfile.ZipFile(
-            out / "animal10n_summary.zip", "w", zipfile.ZIP_DEFLATED
+            out / (dataset_name + "_summary.zip"), "w", zipfile.ZIP_DEFLATED
         ) as z:
             for p in sorted(out.rglob("*")):
                 if (
                     p.is_file()
-                    and p.suffix in (".csv", ".json", ".yaml", ".md", ".txt")
+                    and p.suffix in (".csv", ".json", ".yaml", ".md", ".txt", ".py")
                     and "data" not in p.relative_to(out).parts
                     and ".hydra" not in p.parts
                     and "heads" not in p.parts
@@ -294,12 +310,13 @@ def main():
             raise RuntimeError("Incomplete stage " + name + "; preserve full Output")
 
     try:
-        data = locate_data(args.input_root)
+        data = find_data(args.input_root)
         manifest = file_manifest(data)
         # Read only observed training labels before any fitting. Test is opaque bytes here.
-        raw = Animal10N(data, train=True)
+        raw = RawDataset(data, train=True)
         manifest["observed_train_class_counts"] = [
-            int((raw.targets == c).sum()) for c in range(10)
+            int((raw.targets == c).sum())
+            for c in range(settings.base.dataset.num_classes)
         ]
         del raw
         (out / "artifacts/input_manifest.json").write_text(
@@ -331,14 +348,17 @@ def main():
                 from room_for_doubt.data.kaggle_artifacts import load_completed_run
 
                 bundle = load_completed_run(
-                    out / "base", load_observed_labels(data, "animal10n", "human")
+                    out / "base",
+                    load_observed_labels(
+                        data, dataset_name, settings.base.dataset.noisy_split
+                    ),
                 )
                 if (
                     bundle["config"]["dataset"].get("manifest_sha256")
                     != manifest["manifest_sha256"]
                 ):
                     raise ValueError(
-                        "Completed base belongs to different Animal-10N input files"
+                        "Completed base belongs to different transfer input files"
                     )
                 state["base_digest"] = bundle["checkpoint_digest"]
                 del bundle
@@ -356,7 +376,7 @@ def main():
             "Status:",
             state["status"],
             "Summary:",
-            out / "animal10n_summary.zip",
+            out / (dataset_name + "_summary.zip"),
             flush=True,
         )
 

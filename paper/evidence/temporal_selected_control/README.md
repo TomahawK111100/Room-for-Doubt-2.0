@@ -1,0 +1,1 @@
+Post-pilot selected-single controls, base seeds43/44, headseed42. Epoch selected by noisy-validation accuracy/NLL over epoch1–5 and fixed interpolation grid, not test. Raw replay81checks passed. Conditional nominal intervals, two fitted bases, no multiplicity correction. Source: outputs/temporal_selected_control_import_20261027/. No independent confirmation claimed.

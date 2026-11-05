@@ -1,0 +1,4 @@
+baseline,proposed,gain_pp,ci_low_pp,ci_high_pp
+base,corrected,2.04,1.46,2.65
+base,snapshot_mean,3.36,2.7,4.04
+snapshot_mean,corrected,-1.32,-1.86,-0.7698

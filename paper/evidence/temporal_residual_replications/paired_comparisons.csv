@@ -1,0 +1,8 @@
+seed,comparison,gain_pp,ci_low_pp,ci_high_pp
+44,temporal_minus_base,2.51,1.92,3.12
+44,single_epoch1_minus_base,1.58,1.06,2.12
+44,temporal_minus_single_epoch1,0.93,0.43,1.45
+43,temporal_minus_base,1.47,1.06,1.88
+43,single_epoch1_minus_base,1.15,0.79,1.5
+43,temporal_minus_single_epoch1,0.32,-0.02,0.6802
+42,temporal_minus_base,2.04,1.46,2.65

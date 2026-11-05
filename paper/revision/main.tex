@@ -1,6 +1,6 @@
 \documentclass{article}
 \usepackage{icomp2026_conference,times}
-\usepackage{amsmath,amssymb,graphicx,booktabs,hyperref,url}
+\usepackage{amsmath,amssymb,graphicx,booktabs,hyperref,url,etoolbox}
 \hypersetup{hidelinks}
 \makeatletter
 \patchcmd{\@maketitle}{Paper under double-blind review}{Working manuscript; venue not selected}{}{\PackageError{draft}{Title patch failed}{Check template.}}
@@ -9,7 +9,7 @@
 \author{Anonymous authors}
 \begin{document}
 \maketitle
-\lhead{Working draft --- 22 October 2026}
+\lhead{Working draft --- 5 November 2026}
 \begin{abstract}
 \input{sections/abstract}
 \end{abstract}
@@ -18,6 +18,8 @@
 \input{sections/method}
 \input{sections/protocol}
 \input{sections/results}
+\input{sections/animal10n_pilot}
+\input{sections/miniwebvision_pilot}
 \input{sections/limitations}
 \input{sections/conclusion}
 \bibliography{references}
@@ -26,4 +28,5 @@
 \appendix
 \input{sections/appendix}
 \input{sections/followups}
+\input{sections/temporal_residual_validation}
 \end{document}

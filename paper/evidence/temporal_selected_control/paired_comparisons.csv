@@ -1,0 +1,7 @@
+seed,comparison,gain_pp,ci_low_pp,ci_high_pp
+43,selected_student_minus_base,0.99,0.52,1.47
+43,temporal_minus_selected_student,0.48,0.1,0.9
+43,temporal_minus_selected_teacher_interpolation,-0.22,-0.7302,0.32
+44,selected_student_minus_base,2.21,1.7,2.74
+44,temporal_minus_selected_student,0.3,-0.17,0.78
+44,temporal_minus_selected_teacher_interpolation,-0.22,-0.77,0.3502

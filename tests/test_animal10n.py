@@ -70,6 +70,19 @@ def test_manifest_detects_pixel_change_even_when_labels_match(release):
         animal10n.verify_identity(animal10n.Animal10N(release), cfg)
 
 
+def test_manifest_binds_mirror_provenance_and_preserves_binary_identity(release):
+    bare = animal10n.file_manifest(release)
+    path = release / "source_provenance.json"
+    path.write_text(json.dumps(dict(distribution="mirror", original_ids=False)))
+    first = animal10n.file_manifest(release)
+    assert first["source_provenance"]["distribution"] == "mirror"
+    assert first["files"] == bare["files"]
+    assert first["manifest_sha256"] != bare["manifest_sha256"]
+    path.write_text(json.dumps(dict(distribution="different_mirror")))
+    assert animal10n.file_manifest(release)["manifest_sha256"] != first["manifest_sha256"]
+    assert not first["supplied_file_origin_independently_verified"]
+
+
 def test_missing_truncated_wrong_count_labels_and_duplicate_ids(release):
     p = release / "data_batch_1.bin"
     good = p.read_bytes()
