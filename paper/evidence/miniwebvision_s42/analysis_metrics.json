@@ -1,0 +1,81 @@
+{
+  "independent_bases": 1,
+  "base_seed": 42,
+  "nested_head_seeds": [
+    42,
+    43,
+    44
+  ],
+  "selected_results": [
+    {
+      "method": "base",
+      "label": "FP32 base",
+      "heads": 1,
+      "acc": 0.8348,
+      "base_error_auroc": 0.8819870732111967,
+      "ece": 0.017199712294340138,
+      "nll": 0.6026893537226954,
+      "acc_pct": 83.48
+    },
+    {
+      "method": "tta",
+      "label": "Uniform TTA",
+      "heads": 1,
+      "acc": 0.8324,
+      "base_error_auroc": 0.8819870732111967,
+      "ece": 0.020988083317875845,
+      "nll": 0.5926252086035764,
+      "acc_pct": 83.24000000000001
+    },
+    {
+      "method": "base_resnet50__best_margin",
+      "label": "Static",
+      "heads": 3,
+      "acc": 0.8332,
+      "base_error_auroc": 0.8660729996561983,
+      "ece": 0.01960091768602527,
+      "nll": 0.5916011747403831,
+      "acc_pct": 83.32000000000001
+    },
+    {
+      "method": "base_resnet50__best_augmented_mean",
+      "label": "Augmented static",
+      "heads": 3,
+      "acc": 0.8326666666666667,
+      "base_error_auroc": 0.8628320209699695,
+      "ece": 0.018901457599798836,
+      "nll": 0.5911302784687925,
+      "acc_pct": 83.26666666666667
+    },
+    {
+      "method": "base_resnet50__history_mean",
+      "label": "History-50",
+      "heads": 3,
+      "acc": 0.8365333333333334,
+      "base_error_auroc": 0.7513466855235512,
+      "ece": 0.01668038207491237,
+      "nll": 0.5920340615597334,
+      "acc_pct": 83.65333333333334
+    },
+    {
+      "method": "base_resnet50__early_mean",
+      "label": "Early-5",
+      "heads": 3,
+      "acc": 0.8413333333333334,
+      "base_error_auroc": 0.8914242168650004,
+      "ece": 0.015062896022200574,
+      "nll": 0.5879524846623417,
+      "acc_pct": 84.13333333333334
+    }
+  ],
+  "early_gain_over_tta_pp": 0.8933333333333349,
+  "early_gain_over_augmented_static_pp": 0.8666666666666711,
+  "early_gain_over_history_pp": 0.48000000000000265,
+  "positive_conditional_accuracy_intervals_vs_tta": 2,
+  "positive_conditional_accuracy_intervals_vs_augmented_static": 2,
+  "positive_conditional_accuracy_intervals_vs_history": 1,
+  "resumed_stage_hours_excluding_data_preparation": 2.3235433008244444,
+  "amp_training_test_acc": 0.8344,
+  "fp32_downstream_base_acc": 0.8348,
+  "raw_prediction_replay_performed": false
+}

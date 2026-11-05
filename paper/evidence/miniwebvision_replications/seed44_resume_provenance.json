@@ -1,0 +1,9 @@
+{
+  "source_checkpoint": "/kaggle/input/notebooks/tomahawkkz/mini-webvision-seed44/rfd_miniwebvision_seed44/base/checkpoints/last.pt",
+  "source_checkpoint_sha256": "1af0b5e8fa58ac72cbb2dc050b87d040c81ab8428044ff8cc95e0f43db694e04",
+  "base_seed": 44,
+  "completed_epochs": 43,
+  "next_epoch_display": 44,
+  "scientific_settings": "unchanged; original50epoch schedule; optimizer/RNG/targets restored",
+  "runtime_workers": 0
+}

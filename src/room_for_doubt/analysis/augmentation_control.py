@@ -13,6 +13,7 @@ from torchvision.datasets import CIFAR10, CIFAR100
 from room_for_doubt.analysis.feature_study import export
 from room_for_doubt.data.cifar_noisy import load_observed_labels
 from room_for_doubt.data.animal10n import Animal10N, verify_identity
+from room_for_doubt.data.mini_webvision import MiniWebVision
 from room_for_doubt.data.feature_artifacts import completed_study, shared_split
 from room_for_doubt.data.kaggle_artifacts import load_completed_run, checkpoint_digest
 from room_for_doubt.inference.augmented_margin import augmented_margin
@@ -178,9 +179,12 @@ def run_control(launch, out):
             raise ValueError("Existing control scientific configuration differs")
     OmegaConf.save(cfg, old_config, resolve=True)
     try:
-        cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100, "animal10n": Animal10N}[
-            cfg.dataset.name
-        ]
+        cls = {
+            "cifar10n": CIFAR10,
+            "cifar100n": CIFAR100,
+            "animal10n": Animal10N,
+            "miniwebvision": MiniWebVision,
+        }[cfg.dataset.name]
         raw = cls(cfg.data_dir, train=True, download=False)
         verify_identity(raw, dict(bundle["config"], data_dir=str(cfg.data_dir)))
         values = augmented_margin(

@@ -1,0 +1,11 @@
+seed,method,acc,ece,nll,brier,own_error_auroc,own_error_auprc,original_base_error_auroc
+43,selected_identity,0.6998,0.105,1.12,0.4315,0.8191,0.6342,0.8191
+43,selected_temporal_residual,0.7097,0.1031,1.081,0.4165,0.8319,0.6457,0.8325
+43,selected_snapshot_mean_1passes,0.6833,0.04467,1.147,0.4424,0.8171,0.643,0.7804
+43,selected_teacher_interpolation_extra_passes,0.7167,0.09487,1.04,0.4051,0.8346,0.6427,0.8336
+43,temporal_student,0.7145,0.1312,1.092,0.4203,0.8287,0.6392,0.8363
+44,selected_identity,0.6904,0.1133,1.142,0.4383,0.8264,0.6571,0.8264
+44,selected_temporal_residual,0.7125,0.1245,1.087,0.4197,0.8287,0.6406,0.8409
+44,selected_snapshot_mean_1passes,0.6819,0.07092,1.121,0.438,0.8222,0.6565,0.7952
+44,selected_teacher_interpolation_extra_passes,0.7177,0.1227,1.058,0.4115,0.8279,0.6291,0.8411
+44,temporal_student,0.7155,0.1489,1.099,0.422,0.834,0.6455,0.8399

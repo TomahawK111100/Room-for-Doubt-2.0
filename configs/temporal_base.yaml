@@ -1,0 +1,8 @@
+defaults:
+  - kaggle_base
+  - _self_
+run_id: temporal_cifar100n_seed42_v1
+base_split_seed: 42
+# Auxiliary teachers only; best.pt remains minimum noisy-validation CE.
+temporal_snapshot_epochs: [1, 2, 3, 4, 5]
+defer_test_evaluation: true

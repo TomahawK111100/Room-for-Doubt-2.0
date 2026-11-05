@@ -1,0 +1,11 @@
+{
+  "status": "complete",
+  "completed_epochs": 50,
+  "best_epoch": 2,
+  "best_val_loss": 0.9200711509188558,
+  "val_noisy_acc": 0.7614498028510768,
+  "test_acc": 0.8288,
+  "test_loss": 0.6099363235473633,
+  "trajectory_samples": 59350,
+  "trajectory_epochs": 50
+}

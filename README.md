@@ -7,6 +7,39 @@ into a reliability signal for new images. The current estimator predicts an
 **early probability-margin summary** from an image and candidate class, then
 uses that score to rank base-model errors and weight test-time augmentations.
 
+An [audited redesign pilot](docs/temporal_redesign.md) now implements class-complete
+early-snapshot compression with a residual posterior head and an exact identity
+fallback. It can change a single-view prediction, unlike scalar view weighting.
+This is a separate experimental branch; gains now replicate across three bases,
+while temporal-specific attribution and paper-level novelty remain unestablished. The evidence below its summary
+still refers to the scalar method.
+
+Frozen clean-test results now cover three independent CIFAR-100N base seeds
+(42/43/44), with fixed data split and head seed42. Accuracy gains are **+2.04,
++1.47 and +2.51 pp**: mean **+2.01 pp**, sample SD0.52 pp. Mean accuracy is
+69.60% for the base,71.61% for the student and73.26% for the five-snapshot mean.
+The stronger teacher remains ahead of every student; ECE worsens on every seed.
+A fixed epoch1 distillation control also improves the base. Temporal students
+exceed it by0.32pp on seed43 (nominal paired interval includes zero) and0.93pp
+on seed44. This supports replicated compression gains, not attribution of the
+entire gain to temporal history. At this earlier stage the non-temporal control was pending; the S2 results below
+now compare equal teacher pass counts, with unequal training cost. Raw replay passes155 checks for the two follow-ups; evidence
+and plots are in `outputs/temporal_replications_import_20261027/`.
+The completed S2 controls now cover all three bases: mean accuracy is71.24% for
+validation-selected single-snapshot distillation,71.55% for Early-2,71.53% for a
+standard direct soft-target head, and71.87% for independent-two-teacher
+compression. Early-5 reaches71.61%: only0.077pp above the direct head and0.063pp
+above Early-2, with mixed seed-wise differences. Independent teachers require
+additional base training and share donors across recipients; equal teacher pass
+counts do not mean equal training cost. No distinctive residual or temporal
+advantage is established.503 deterministic checks replay the supplied raw
+predictions in `outputs/posthoc_controls_import_20261028_verified/`; this does
+not regenerate fitting without the omitted weights/train-validation arrays.
+The seed42 full epoch-selection grid was recovered from original Kaggle Output
+and its20-row ranking exactly matches the frozen policy.
+Runtime remains unmeasured. These are exploratory comparisons on a known test.
+The manuscript records these separately from scalar-method results below.
+
 ## Current evidence
 
 The current exploratory study uses ImageNet-initialized ResNet50 bases trained
@@ -71,22 +104,70 @@ timing intervals limit interpretation of small differences. No ensemble is timed
 [Editable manuscript, compact evidence and figure generation](paper/README.md).
 All displayed figures and tables can be regenerated without training or weights.
 
-## Animal-10N pilot (prepared, not run)
+## Animal-10N transfer (three bases completed)
 
-The CIFAR recipe is frozen for a prospective Animal-10N pilot: seed42 first,
-then planned independent bases43/44. The [protocol](docs/animal10n_protocol.md)
-fixes the splits,50-epoch base, Early-5 target, matched static/history controls,
-head seeds, shared views, validation selection and reporting of negative results.
-[Machine-readable settings](configs/animal10n_pilot.yaml) are copied into every run.
+The [frozen protocol](docs/animal10n_protocol.md) transfers the same recipe to
+Animal-10N on three independent bases42/43/44. Settings, splits, head seeds and
+validation-selection grids were fixed before the pilot; the replications retain
+them. Each method averages its three heads within a base before bases are
+averaged equally. These are three independent bases, not nine.
 
-`python scripts/animal10n_pilot.py --input-root /path/to/data --output outputs/animal10n_seed42 --inspect-only`
-audits the documented official binary release without fitting or requiring GPU.
-Remove `--inspect-only` to run the complete pilot on two visible CUDA GPUs.
-No CIFAR weights or old Kaggle notebook Outputs are needed. Native64px crops
-are used; CIFAR32px view generation remains unchanged. The dataset has no full
-clean-training-label vector, so train-noise diagnostics are explicitly unavailable.
-The archive and a real CUDA sanity run are still pending; synthetic CPU tests
-are not Animal-10N accuracy results.
+| Base seed | FP32 base | Selected uniform TTA | Early-5 | History-50 | Early-5 gain over TTA |
+|---|---:|---:|---:|---:|---:|
+| 42 | 89.24% | 89.56% | 90.11% | 89.95% | +0.55 pp |
+| 43 | 88.80% | 89.86% | 90.01% | 90.22% | +0.15 pp |
+| 44 | 89.18% | 89.92% | 89.96% | 89.91% | +0.04 pp |
+
+Mean Early-5 gain is+0.96pp over base and+0.25pp over TTA. The latter has a
+between-base sample SD of0.27pp, not a confidence interval. The augmentation
+control averages89.83%, versus Early-5 90.03%; only two of nine conditional
+accuracy intervals strictly exclude zero, one touches zero and six cross zero.
+History-50 and Early-5 have virtually identical mean accuracy (90.0267/90.0289%).
+Original-view error AUROC improves over MSP on base42 but falls below MSP on
+bases43/44. Early-5 mean-head ECE worsens on all bases; NLL improves on all.
+The weaker replications limit a claim of universal early-history superiority.
+
+All stages completed in2.70/2.67/2.89h on two T4 GPUs per session. Data are an
+explicitly identified Activeloop copy, repacked without changing decoded pixels,
+labels or train/test membership. Original KAIST IDs/order and archive equality
+remain unverified. Native64px views preserve the CIFAR32px implementation; no
+full clean-training-label vector or training-noise detection metric is invented.
+See the manuscript transfer section and `paper/evidence/animal10n_replications/`.
+A CPU replay on Kaggle version361233698 passed on all three full Outputs:
+21 scalar heads and40 selected rows per base, frozen validation choices, test
+metrics and paired intervals. The compact audit is saved under
+`outputs/animal10n_raw_audit_import_20261022/`. Base weights received an
+eight-validation-image smoke per base; full feature extraction/PCA were not
+rerun. Same-family semantic review remains provisional.
+
+## Mini-WebVision transfer (three completed bases)
+
+The [fixed protocol](docs/mini_webvision_protocol.md) covers Google classes0–49
+of WebVision1.0:65,944 training images and2,500 final-evaluation images. Bases42/43/44
+completed50epochs and all scalar/control comparisons after checkpoint recovery.
+
+| Base seed | FP32 base | Selected TTA | Early-5 | History-50 | Augmented static |
+|---|---:|---:|---:|---:|---:|
+|42|83.48%|83.24%|84.13%|83.65%|83.27%|
+|43|82.92%|83.32%|83.83%|83.92%|83.41%|
+|44|82.32%|83.44%|84.29%|83.79%|83.49%|
+
+Head methods average three heads within each base. Mean Early-5 gains are
++0.75pp over TTA and+0.69pp over augmented static, positive on each base.
+The between-base sample SD of the TTA gain is0.21pp, not a confidence interval.
+Only3of9conditional accuracy intervals strictly exclude zero for each comparison;
+these are **three independent bases**, not nine. Early-5 averages+0.30pp over
+History-50 but is0.09pp lower on base43. Mean error AUROC is0.8897 versus MSP0.8853;
+Early mean AUROC is higher on all bases. Mean ECE improves over TTA overall but
+worsens on bases43/44; NLL improves on all three.
+
+Resumed pipelines took2.32/2.04/1.96h, excluding image preparation and earlier
+interrupted work. Evidence is preserved in
+`outputs/miniwebvision_replications_import_20261025/` and
+`paper/evidence/miniwebvision_replications/`. Compact tables and frozen policies
+were cross-checked; raw-prediction replay remains pending.
+
+![Mini-WebVision replications](paper/revision/figures/miniwebvision_replications.png)
 
 ## How the project evolved
 
@@ -204,7 +285,11 @@ rather than filling missing trajectories with zero.
 
 Multiple independent base seeds and separate evaluation are needed for final
 claims. Current exploratory results are not a universal effectiveness guarantee.
-ARIS is an optional local aid, not a package dependency.
+ARIS is disabled by the owner (28 October, reaffirmed 4 November 2026).
+The economical workflow in [AGENTS.md](AGENTS.md#14-economical-agent-workflow-and-disabled-aris)
+uses direct checks and ordinary models by default. Astra is reserved for a bounded,
+justified escalation; Ultra/max requires a separate explicit request. Archived
+ARIS files are not a package dependency.
 
 ## Checks
 
@@ -214,3 +299,14 @@ python scripts/check_file_sizes.py --history
 ```
 
 No publication license has been selected by the project owner.
+
+## Plan to conference submission
+
+The ordered roadmap and acceptance gates are in [the conference roadmap](docs/planning/conference_roadmap.md). Execution state is in `docs/planning/conference_state.json`; the project is not yet submission-ready. Existing exploratory results are preserved, and new temporal-method transfer remains untested.
+
+### Current manuscript
+
+[Working manuscript PDF, 5 November 2026](paper/revision/Room_for_Doubt_manuscript.pdf).
+The PDF includes the four-dataset scalar study and the exploratory three-base
+posterior-compression controls. This is a working draft, not an accepted paper;
+its limitations and outstanding runtime evaluation are stated explicitly.

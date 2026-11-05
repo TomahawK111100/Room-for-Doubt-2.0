@@ -21,6 +21,7 @@ from hydra.utils import to_absolute_path
 from omegaconf import OmegaConf
 from room_for_doubt.data.cifar_noisy import get_train_val_indices, load_observed_labels
 from room_for_doubt.data.animal10n import Animal10N, verify_identity
+from room_for_doubt.data.mini_webvision import MiniWebVision
 from room_for_doubt.data.meta_splits import reserve_meta_splits
 from room_for_doubt.data.observed_images import ObservedImages, imagenet_transform
 from room_for_doubt.models.robust_classifier import (
@@ -34,6 +35,7 @@ from room_for_doubt.reporting.artifacts import (
     save_run_metadata,
 )
 from room_for_doubt.utils.paths import config_directory
+from room_for_doubt.training.temporal_snapshots import snapshot_epochs, save_snapshot
 
 
 def atomic_save(value, path):
@@ -63,6 +65,8 @@ def base_split_seed(config):
 
 def resume_contract(config):
     config = dict(config, base_split_seed=base_split_seed(config))
+    config.setdefault("temporal_snapshot_epochs", [])
+    config.setdefault("defer_test_evaluation", False)
     return {
         k: v
         for k, v in config.items()
@@ -107,6 +111,7 @@ def evaluate(model, loader, device, amp):
 
 def train(cfg, out):
     config = OmegaConf.to_container(cfg, resolve=True)
+    retained_epochs = snapshot_epochs(config)
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     ckpt_dir = out / "checkpoints"
@@ -135,7 +140,7 @@ def train(cfg, out):
         )
     if cfg.model.name != "resnet50" or cfg.epochs < 1 or not 0 < cfg.loss.q <= 1:
         raise ValueError("Invalid model, epoch count or GCE q")
-    expected = {"cifar10n": 10, "cifar100n": 100, "animal10n": 10}
+    expected = {"cifar10n": 10, "cifar100n": 100, "animal10n": 10, "miniwebvision": 50}
     if cfg.dataset.num_classes != expected[cfg.dataset.name]:
         raise ValueError("Dataset class count mismatch")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -158,9 +163,12 @@ def train(cfg, out):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
     OmegaConf.save(cfg, out / "config.yaml", resolve=True)
-    cls = {"cifar10n": CIFAR10, "cifar100n": CIFAR100, "animal10n": Animal10N}[
-        cfg.dataset.name
-    ]
+    cls = {
+        "cifar10n": CIFAR10,
+        "cifar100n": CIFAR100,
+        "animal10n": Animal10N,
+        "miniwebvision": MiniWebVision,
+    }[cfg.dataset.name]
     root = to_absolute_path(cfg.data_dir)
     raw = cls(root, train=True, download=True)
     verify_identity(raw, config)
@@ -235,6 +243,9 @@ def train(cfg, out):
         if amp and checkpoint["cuda_rng"] is not None:
             torch.cuda.set_rng_state_all(checkpoint["cuda_rng"])
     id_to_row = np.full(len(noisy), -1, dtype=np.int64)
+    for retained in retained_epochs:
+        if retained <= start and not (ckpt_dir / "temporal" / f"epoch_{retained:03d}.pt").exists():
+            raise ValueError("Resume is missing an earlier temporal snapshot")
     id_to_row[train_ids] = np.arange(len(train_ids))
     info = dict(
         checkpoint_path=str(best_path),
@@ -310,6 +321,7 @@ def train(cfg, out):
                 ),
                 best_path,
             )
+        save_snapshot(base, config, epoch, ckpt_dir, atomic_save)
         state = dict(
             state_dict=base.state_dict(),
             optimizer=optimizer.state_dict(),
@@ -403,6 +415,19 @@ def train(cfg, out):
         labels=arrays[1],
         ids=arrays[2],
     )
+    if cfg.get("defer_test_evaluation", False):
+        metrics = dict(status="complete", completed_epochs=cfg.epochs,
+                       best_epoch=best_epoch, best_val_loss=best_loss,
+                       val_noisy_acc=val["accuracy"], test_evaluated=False,
+                       trajectory_samples=len(train_ids), trajectory_epochs=cfg.epochs)
+        save_metrics(out, metrics)
+        save_run_metadata(out, cfg.run_id, config, **info, best_epoch=best_epoch,
+                          best_val_loss=best_loss, test_evaluated=False)
+        generate_report(out, cfg.run_id, config, metrics,
+                        dict(info, best_epoch=best_epoch, best_val_loss=best_loss),
+                        "Base training complete. Test data never instantiated: final evaluation is deferred "
+                        "until the downstream temporal policy is frozen. Auxiliary snapshots are teacher-only.")
+        return metrics
     # Clean test is first instantiated after the training/selection loop.
     test_raw = cls(root, train=False, download=True)
     test = ObservedImages(
@@ -431,7 +456,7 @@ def train(cfg, out):
         trajectory_samples=len(train_ids),
         trajectory_epochs=cfg.epochs,
     )
-    if cfg.dataset.name != "animal10n":
+    if cfg.dataset.name in {"cifar10n", "cifar100n"}:
         metrics["target_70_reached"] = test_metrics["accuracy"] >= 0.70
     save_metrics(out, metrics)
     save_run_metadata(

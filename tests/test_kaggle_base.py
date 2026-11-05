@@ -33,8 +33,9 @@ def test_trajectory_coverage_rejects_duplicates():
     assert seen.all() and np.isfinite(values).all()
 
 
+@pytest.mark.parametrize("defer_test", [False, True])
 def test_training_resume_selects_noisy_val_and_exports_complete_targets(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, defer_test
 ):
     import room_for_doubt.training.kaggle_base as module
 
@@ -69,6 +70,8 @@ def test_training_resume_selects_noisy_val_and_exports_complete_targets(
     cfg.num_workers = 0
     cfg.require_cuda = False
     cfg.max_hours = -1
+    cfg.defer_test_evaluation = defer_test
+    cfg.temporal_snapshot_epochs = [1, 2] if defer_test else []
     # Force the offline test to CPU even on a CUDA runner.
     monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
     monkeypatch.setattr(torch.cuda, "device_count", lambda: 0)
@@ -78,7 +81,12 @@ def test_training_resume_selects_noisy_val_and_exports_complete_targets(
     (out / "checkpoints/best.pt").unlink()  # last.pt must recover the best model.
     cfg.max_hours = 10
     result = train(cfg, out)
-    assert result["status"] == "complete" and events.count("test_data") == 1
+    assert result["status"] == "complete" and events.count("test_data") == int(not defer_test)
+    if defer_test:
+        assert result["test_evaluated"] is False
+        assert not (out / "artifacts/test_predictions.npz").exists()
+        from room_for_doubt.training.temporal_snapshots import verify_snapshots
+        assert len(verify_snapshots(out, OmegaConf.to_container(cfg, resolve=True), [1, 2])) == 2
     with np.load(out / "artifacts/meta_targets.npz") as data:
         from room_for_doubt.data.cifar_noisy import get_train_val_indices
 

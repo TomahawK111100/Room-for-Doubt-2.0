@@ -91,6 +91,7 @@ aris_repo/
 !/docs/reproduction.md
 !/docs/repository_layout.md
 !/docs/animal10n_protocol.md
+!/docs/temporal_redesign.md
 /idea-stage/
 /MANIFEST.md
 
@@ -105,3 +106,11 @@ aris_repo/
 /paper/revision/*.log
 /paper/revision/*.out
 /paper/revision/*.synctex.gz
+
+# Private CV and supervisor exports
+/reports/
+!/paper/evidence/**/*.json
+!/docs/mini_webvision_protocol.md
+!/docs/planning/
+/docs/planning/*
+!/docs/planning/decisive_controls_protocol_v1.md

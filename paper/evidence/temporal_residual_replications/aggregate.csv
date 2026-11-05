@@ -1,0 +1,4 @@
+method,bases,acc_mean,acc_sample_sd
+identity,3,0.696,0.00497
+temporal_residual,3,0.7161,0.00197
+snapshot_mean_5passes,3,0.7326,0.002572

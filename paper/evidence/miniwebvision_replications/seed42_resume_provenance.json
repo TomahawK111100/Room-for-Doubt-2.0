@@ -1,0 +1,8 @@
+{
+  "source_checkpoint": "/kaggle/input/notebooks/tomahawkkz/mini-webvision-pilot-seed42/rfd_miniwebvision_seed42/base/checkpoints/last.pt",
+  "source_kaggle_version": 361409585,
+  "completed_epochs": 40,
+  "next_epoch_display": 41,
+  "runtime_change": "base.num_workers 4 -> 0; memory mitigation, not a proven fix",
+  "checkpoint_sha256": "06a03c9526032668150edd287fb1ffbc98799cf8b27668a729a567fab8fea495"
+}

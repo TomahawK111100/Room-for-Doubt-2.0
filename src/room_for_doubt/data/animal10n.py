@@ -36,7 +36,7 @@ def batch_paths(root, train):
 
 
 def file_manifest(root):
-    """Hash both official partitions as opaque files, without using test labels."""
+    """Hash binary partitions and optional provenance, without using test labels."""
     files = []
     for train in (True, False):
         total = 0
@@ -63,7 +63,22 @@ def file_manifest(root):
             raise ValueError(
                 f"Animal-10N partition count {total}; expected {EXPECTED_COUNTS[train]}"
             )
-    identity = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+    identity_payload = files
+    provenance = {}
+    source = Path(root) / "source_provenance.json"
+    if source.exists():
+        payload = source.read_bytes()
+        provenance = dict(
+            source_provenance=json.loads(payload),
+            source_provenance_sha256=hashlib.sha256(payload).hexdigest(),
+        )
+        identity_payload = dict(
+            files=files,
+            source_provenance_sha256=provenance["source_provenance_sha256"],
+        )
+    identity = hashlib.sha256(
+        json.dumps(identity_payload, sort_keys=True).encode()
+    ).hexdigest()
     return dict(
         format="kaist_binary_i32_i32_chw64_be_v1",
         files=files,
@@ -71,6 +86,7 @@ def file_manifest(root):
         format_reference=OFFICIAL_URL,
         supplied_file_origin_independently_verified=False,
         official_reference_checksums_available=False,
+        **provenance,
     )
 
 
@@ -123,6 +139,12 @@ class Animal10N:
 
 def verify_identity(raw, config):
     """Animal inputs must match the manifest frozen before model fitting."""
+    if config["dataset"]["name"] == "miniwebvision":
+        from room_for_doubt.data.mini_webvision import (
+            verify_identity as verify_webvision,
+        )
+
+        return verify_webvision(raw, config)
     if config["dataset"]["name"] != "animal10n":
         return
     expected = config["dataset"].get("manifest_sha256")

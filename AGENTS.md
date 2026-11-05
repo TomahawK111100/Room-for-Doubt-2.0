@@ -304,15 +304,49 @@ A task is complete when it has:
 A training run is not complete until its outputs can be inspected.
 
 
-## 14. Local ARIS Installation
+## 14. Economical agent workflow and disabled ARIS
 
-ARIS skills are installed under `.antigravity/skills/` from upstream commit
-`26b95cfa0d8747078e9e43b42e20952709e561b8`. Read
-`.antigravity/AGENT_GUIDE.md` for routing and the relevant skill before using it.
-Codex-specific variants live under `.antigravity/skills/skills-codex/`.
-The upstream version contains no `HERO.md`; the guide is used under its actual
-name, not represented as HERO rules. This optional local installation is ignored
-by Git and is not required to install or run the research package.
+Project-owner instructions, 28 October and 4 November 2026: ARIS is disabled.
+This section supersedes older ARIS routing and reviewer requirements.
+
+* Do not invoke ARIS orchestration, model routers, audit chains, automatic reviewer
+  passes or archived skill instructions. Do not read `.antigravity/` during normal
+  work. Its files are historical references only; keep them preserved and ignored.
+* Work directly by default. Use source inspection, deterministic calculations and
+  focused tests before delegating. Routine edits, imports, tables, reports, plotting,
+  file searches and training submission do not require an agent or a model upgrade.
+* Delegate only a concrete independent question with a defined deliverable. Normally
+  use one subagent; at most two ordinary subagents concurrently when their work is
+  independent and parallel work offers a clear benefit. No automatic reviewer chains.
+* Use an available ordinary non-Astra model with low or medium reasoning for routine
+  delegated work. Inherit settings only when they are already economical and non-Astra;
+  otherwise explicitly select an available ordinary model. Do not invent model IDs.
+* Astra is an exceptional escalation, authorized conditionally by the owner on
+  4 November: a consequential scientific/mathematical question, unresolved evaluation
+  integrity issue, or difficult root-cause problem must remain after a focused ordinary
+  attempt or deterministic check. Name the unresolved question and explain why another
+  ordinary pass is unlikely to settle it. A generic desire for higher quality is not
+  sufficient. A bounded independent review of a central scientific claim may qualify
+  when it addresses a specific documented uncertainty, not routine approval.
+* Before an Astra call, briefly state its purpose and why the escalation is justified.
+  Use one Astra subagent at a time, low/medium reasoning initially, for one bounded
+  question. High reasoning requires a specific justification; Ultra/max/maximum
+  requires a separate explicit owner request. Never escalate automatically on a retry.
+* Give agents only relevant files, facts and the exact question; prefer a fresh context
+  rather than forking the entire chat. Request concise findings with evidence and a
+  clear stopping condition. Do not let a subagent spawn further agents unless explicitly
+  authorized for that task. Stop irrelevant or stalled agents promptly.
+* Do not repeat reviews, broaden searches or rerun tests after adequate evidence is
+  available unless a new change, failure or unresolved question justifies doing so.
+  Do not monitor training logs repeatedly: verify submission once, then inspect completed
+  artifacts when supplied or requested. Do not start background monitors automatically.
+* These are project execution rules, not a technical account spending cap. Never claim
+  exact token savings, a quota guarantee, or an app-wide model restriction without
+  observing such enforcement. Do not change global Codex settings as part of this rule.
+
+The optional `.antigravity/` ARIS files remain archived locally and ignored by Git;
+they are not deleted and are not required to install or run the research package.
+Their upstream commit was `26b95cfa0d8747078e9e43b42e20952709e561b8`.
 
 Repository commands and migration mappings are documented in
 `docs/reproduction.md` and `docs/repository_layout.md`. Use the offline test suite

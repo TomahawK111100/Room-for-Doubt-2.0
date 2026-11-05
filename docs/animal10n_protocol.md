@@ -54,11 +54,28 @@ and channel-first uint8 image bytes (3x64x64). The byte order follows the
 arbitrary mirror or silently download substitute data. The official source
 publishes no reference checksums on the inspected page: recorded SHA256 values
 establish the identity of supplied files, not independently verified provenance.
-Obtain the official archive and retain its source information with the run.
+Retain source information with the run.
+
+Data-realization amendment, 22 October 2026, before any Animal fitting: the
+official form was submitted, but supplied no immediate archive. The explicitly
+identified public Activeloop mirror (`hub://activeloop/animal10n-train` and
+`hub://activeloop/animal10n-test`) was acquired instead. Its decoded uint8 RGB64
+images and labels are repacked to the documented binary storage layout, without
+resizing, recompression, relabeling or changing the existing train/test partition.
+Record IDs are **mirror row offsets**, not recovered original KAIST identifiers.
+Consequently a seed42 split is reproducible within this realization; equality
+to a split using the unverified original KAIST row order is not claimed. No
+hyperparameter, target, selection rule or endpoint changes with this amendment.
+`source_provenance.json` records the mirror, conversion and binary hashes; its
+SHA256 is included in the input identity and the saved run manifest. The actual
+decoded binary hashes are `c8409fa2b1b60f3b896afbb590d75e3975214da2ee1151977f885d50340ae123`
+(train) and `006a389eeed34154c15b19b129ce41a906ed5cf5f6348b30ba3a3d139270fe97` (test).
+All ten observed training-class counts match the official description. That
+agreement does not establish bit equality with the official archive.
 
 Binary records are mapped read-only. Internal sample IDs follow naturally sorted
 batch filenames and row offsets; original record IDs are checked for uniqueness
-within each official partition. Train/test IDs have separate namespaces.
+within each supplied partition. Train/test IDs have separate namespaces.
 Preflight checks record sizes/counts, observed training-label range and class
 counts, and hashes opaque train/test files. It does not evaluate a model or use
 test-label values for selection. Missing, ambiguous or malformed data stop before
@@ -159,9 +176,46 @@ Refine the estimate from actual epoch times after the first three epochs.
 
 The adapter, observed-only CPU training/resume,64px shared views, matched-head
 study and augmented-static path are tested with tiny synthetic binary data and
-networks. Missing/corrupt inputs fail explicitly. No Animal-10N archive is
-currently available locally; no real Animal training or accuracy is claimed.
-The first real run still needs the official binary data and CUDA environment.
+networks. Missing/corrupt inputs fail explicitly. The real Activeloop copy has
+passed local input preflight (50,000/5,000 records, training labels and opaque
+file hashes). All three preplanned independent bases42/43/44 completed base,
+study, paired and augmentation stages on two Tesla T4 GPUs per session in
+2.70/2.67/2.89h. Saved protocol files match byte-for-byte; only base seed and
+runtime output locations differ in the frozen scientific settings. Mean Early-5
+accuracy is90.03%, selected uniformTTA89.78%, History-5090.03%, augmented-static
+89.83% and FP32 base89.07%. The TTA advantage attenuates from+0.55pp on42 to
++0.15/+0.04pp on43/44. Early-5 original-view AUROC is below MSP on both new bases;
+mean-head ECE worsens on all three and NLL improves. Recorded-cache replay completed on Kaggle version361233698 for all three
+full Outputs. All21 scalar heads and40 selected rows per base passed; labels/IDs,
+validation policies, test metrics and paired intervals were checked. Full base
+extraction/PCA were not rerun; base forward checks cover eight validation images.
+The returned audit is imported at `outputs/animal10n_raw_audit_import_20261022/`.
+See `paper/revision/sections/animal10n_pilot.tex` for conditional intervals and limits.
+
+## CPU replay of the three saved Outputs
+
+`python scripts/build_animal10n_audit_notebook.py` generates a one-cell notebook
+under `outputs/animal10n_audit_preparation_20261022/`. It pins public commit
+`e85077892dded27f4120feb4694d16eac3e39e8f` and embeds a checksum-verified source
+overlay for the new audit. No Git push or base/head retraining is required.
+Attach full Notebook Outputs `tomahawkkz/animal-10n`,
+`tomahawkkz/seed43-animal`, `tomahawkkz/seed-44-animal`, plus the existing
+`tomahawkkz/animal-10n-data` binary dataset. Use CPU and Internet On.
+
+The replay checks dataset bytes/labels/IDs, saved scientific settings,
+minimum-validation checkpoints, scalar heads on all cached projected val/test
+features, noisy-validation policy choices, selected metrics and paired
+intervals. A fixed eight-validation-image forward check per base is a smoke
+test; full base extraction/PCA fitting is not repeated. Source mounts are
+read-only. CPU execution does not require GPU quota; the45-minute computational
+budget is not a measured runtime estimate or a hard whole-notebook timeout.
+
+The preparation passed local tests and a fresh same-family provisional code
+review. Actual Kaggle recorded-cache replay subsequently completed with status
+`complete_replay_checks` for seeds42/43/44. The returned summary is preserved in
+`outputs/animal10n_raw_audit_import_20261022/source_summary/`; elapsed audit time
+was199.34s excluding launcher setup. This deterministic replay does not upgrade
+the separate same-family semantic review to cross-family acceptance.
 
 
 ## ARIS preparation record

@@ -1,0 +1,29 @@
+[
+  {
+    "seed": 42,
+    "status": "complete",
+    "base_digest": "b044fd365c90d0dda405fea353d86d62d8973ff89ae5ed349a234b0a3994bdba",
+    "history_rows": 50,
+    "shared_study_control_rows_equal": true,
+    "recorded_policies_match": true,
+    "raw_replay_performed": false
+  },
+  {
+    "seed": 43,
+    "status": "complete",
+    "base_digest": "2fdfb0b2261bc0129aa6d9ac0eb53edb26258d7a88081bd19dcde5e139ec25b5",
+    "history_rows": 50,
+    "shared_study_control_rows_equal": true,
+    "recorded_policies_match": true,
+    "raw_replay_performed": false
+  },
+  {
+    "seed": 44,
+    "status": "complete",
+    "base_digest": "190d7812bdef9eb01f0fbfc787d7bd0935c78b7d92cb0f2b737c20c0d1850bcb",
+    "history_rows": 50,
+    "shared_study_control_rows_equal": true,
+    "recorded_policies_match": true,
+    "raw_replay_performed": false
+  }
+]
