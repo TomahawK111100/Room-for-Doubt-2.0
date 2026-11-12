@@ -1,0 +1,22 @@
+\section{External-test probability and error diagnostics}
+\label{sec:external-diagnostics}
+
+Table~\ref{tab:external-diagnostics} reports descriptive metrics computed
+from saved predictions. Each metric is averaged over the three fitted bases
+within a benchmark. Confidence is maximum predicted probability. Own AUROC
+uses each predictor's own error indicator and base AUROC uses the corresponding
+base's error indicator for every predictor. AURC uses the predictor's own
+errors and expected ordering within confidence ties. Corrected and harmed
+counts compare each predictor with its base and sum over seed--image pairs.
+These diagnostics were not used for selection.
+
+\begin{table}[h]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Probability quality, error ranking and paired changes in correctness
+on the two external test sets. Corr. and Harm count corrected and introduced
+errors, respectively.}
+\label{tab:external-diagnostics}
+\input{tables/external_diagnostics}
+\end{table}

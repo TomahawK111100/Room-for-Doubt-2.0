@@ -14,3 +14,15 @@ Maximum softmax probability is a standard baseline for detecting prediction erro
 
 Deep ensembles average predictions of independently trained models \citep{lakshminarayanan2017simple}. They are relevant both as a reliability baseline and as an alternative use of additional training compute. Test-time augmentation instead averages predictions across transformed versions of an image. Learned aggregation has already been studied directly \citep{shanmugam2021aggregation}; weighting views itself is not the novelty here. Our question is whether a distilled temporal target supplies a useful view score under noisy supervision. Uniform, maximum-probability, probability-gap, and entropy weighting share the same cached views in our evaluation. A learned aggregation baseline under the same supervision and compute budget remains a relevant comparison.
 
+
+\paragraph{Snapshot distillation and fixed features.}
+Snapshot Distillation uses earlier weights as teachers during later
+cycles of the same training run~\citep{yang2019snapshot}. Jeong and Chung
+study self-distillation under label noise with fixed feature extractors
+and use the teacher's top predictions for partial-label
+refinement~\citep{jeong2025rethinking}. ELDET uses early teachers to address
+categorization and localization noise in object detection~\citep{choi2025eldet}.
+Our posterior experiments hold the trained classifier and head budget
+fixed. They compare averaging early checkpoints with averaging views
+from one checkpoint. These studies provide context for the design. The
+reported controls do not reproduce their full training procedures.

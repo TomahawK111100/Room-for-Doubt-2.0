@@ -1,0 +1,85 @@
+{
+  "version_id": 368598938,
+  "examples": 2000,
+  "primary_pass": false,
+  "contrasts": {
+    "early5_vs_static5": {
+      "per_seed_pp": [
+        -1.0,
+        0.75,
+        0.2
+      ],
+      "mean_pp": -0.016666666666666663,
+      "between_seed_sd_pp": 0.89489291724392,
+      "paired_ci95_pp": [
+        -0.5333333333333331,
+        0.48333333333333317
+      ]
+    },
+    "early5_vs_base": {
+      "per_seed_pp": [
+        0.3,
+        0.75,
+        -1.25
+      ],
+      "mean_pp": -0.06666666666666665,
+      "between_seed_sd_pp": 1.0492060490358095,
+      "paired_ci95_pp": [
+        -0.6333333333333335,
+        0.5004166666666607
+      ]
+    },
+    "early5_vs_selected1": {
+      "per_seed_pp": [
+        -0.75,
+        0.75,
+        0.15
+      ],
+      "mean_pp": 0.049999999999999996,
+      "between_seed_sd_pp": 0.754983443527075,
+      "paired_ci95_pp": [
+        -0.4666666666666665,
+        0.5499999999999999
+      ]
+    },
+    "static5_vs_selected1": {
+      "per_seed_pp": [
+        0.25,
+        0.0,
+        -0.05
+      ],
+      "mean_pp": 0.06666666666666667,
+      "between_seed_sd_pp": 0.16072751268321595,
+      "paired_ci95_pp": [
+        -0.13333333333333333,
+        0.26666666666666666
+      ]
+    },
+    "early_teacher_vs_static_teacher": {
+      "per_seed_pp": [
+        1.5,
+        0.75,
+        4.05
+      ],
+      "mean_pp": 2.1,
+      "between_seed_sd_pp": 1.7298843892006193,
+      "paired_ci95_pp": [
+        1.3333333333333335,
+        2.8666666666666663
+      ]
+    }
+  },
+  "mean_accuracy_percent": {
+    "base": 77.85,
+    "direct_soft5": 77.78333333333333,
+    "static5_direct": 77.8,
+    "selected1_direct": 77.73333333333333,
+    "early5_teacher": 79.36666666666666,
+    "static5_teacher": 77.26666666666667
+  },
+  "local_archive_sha256": {
+    "seed42_predictions.npz": "19ceda9737bb765a1a391fde79dbced3e4632d678972af9571abb4eaa3e744a0",
+    "seed43_predictions.npz": "60ec7f0e0d0dda66baec99939a8bc9ea020857938bc32110461800d2bb46f04f",
+    "seed44_predictions.npz": "cbd1bc593b1d5aa1d392e270139156c1480b41092f6099244442fcf38ed432d4"
+  }
+}

@@ -1,0 +1,35 @@
+\section{Teacher comparison on CIFAR-10.2}
+\label{sec:teacher-cifar102}
+Following the CIFAR-10.1 evaluation, we fixed a separate protocol for
+direct distillation on the same three frozen CIFAR-10N Worse bases.
+The external test used all 2,000 images in the official CIFAR-10.2
+test split~\citep{lu2020harder}. Early-5 averages predictions from five
+early checkpoints on the original image. Static-5 averages five
+deterministic views from one early checkpoint chosen on noisy validation
+by accuracy, then NLL, then epoch. Both direct heads use the same frozen
+features, architecture and fitting budget. A selected-single head uses the
+canonical view from the checkpoint chosen for Static-5. Both five-pass
+teachers are evaluated directly as secondary comparisons. The primary
+contrast was Early-5 direct versus Static-5 direct, with a prespecified
+threshold of 0.50 percentage points and a positive lower bound of the
+paired 95\% interval.
+
+\begin{table}[tb]
+\centering
+\small
+\caption{CIFAR-10.2 test accuracy (\%) across the three frozen bases.
+The first four predictors use one backbone pass. The last two use five.}
+\label{tab:teacher-cifar102}
+\input{tables/teacher_cifar102}
+\end{table}
+
+The primary accuracy differences were $-1.00$, $+0.75$ and $+0.20$
+points (mean $-0.02$, between-base SD $0.89$, conditional paired
+95\% interval $[-0.53, 0.48]$). The primary criterion was not met.
+Early-5 direct also averaged $-0.07$ points relative to the base
+(nominal interval $[-0.63, 0.50]$). In the secondary comparison of the
+uncompressed teachers, Early-5 averaged $+2.10$ points over Static-5
+(nominal interval $[1.33, 2.87]$). The advantage observed for the
+five-checkpoint teacher did not carry over to these direct heads.
+The intervals condition on the three fitted bases and use the same
+stratified resampled image IDs across predictors and seeds.

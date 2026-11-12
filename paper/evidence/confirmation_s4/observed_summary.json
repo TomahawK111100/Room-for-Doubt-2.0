@@ -1,0 +1,28 @@
+{
+  "dataset": "CIFAR-10.1 v6",
+  "examples": 2000,
+  "base_gain_pp": [
+    0.35,
+    -1.05,
+    0.5
+  ],
+  "mean_gain_pp": -0.06666666666666667,
+  "gain_ci95_pp": [
+    -0.5337499999999997,
+    0.4166666666666666
+  ],
+  "gain_between_base_sd_pp": 0.8548879068821441,
+  "teacher_gap_pp": 1.7333333333333332,
+  "teacher_gap_ci95_pp": [
+    1.0666666666666667,
+    2.4
+  ],
+  "pipeline_batch1_ms": {
+    "base": 7.2086231666617095,
+    "early5": 7.264999583336855,
+    "direct_soft5": 7.279497333305092,
+    "early5_teacher": 31.636413583631413
+  },
+  "quality_pass": false,
+  "latency_pass": true
+}

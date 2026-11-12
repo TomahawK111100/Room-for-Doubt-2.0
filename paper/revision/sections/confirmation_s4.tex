@@ -1,0 +1,35 @@
+\section{Independent CIFAR-10.1 evaluation}
+\label{sec:confirmation-s4}
+We trained three ResNet50 bases on CIFAR-10N Worse (seeds 42--44, shared
+noisy train and validation split). The saved training snapshots, heads
+and validation-selected policies were frozen before evaluation on all
+2,000 images of CIFAR-10.1 v6~\citep{recht2019imagenet}. We compared the base, the Early-5 residual
+head, a direct soft-target head with the same training targets and budget,
+and the mean of five early snapshots. The primary contrast was residual
+Early-5 versus its base. The protocol required a mean gain of at least
+0.50 percentage points with a positive lower bound of a paired 95\%
+interval, and a mean teacher gap of at most 2 points. Resampling preserved
+class counts and paired image IDs across all three fitted bases.
+
+\begin{table}[t]
+\centering
+\small
+\caption{CIFAR-10.1 v6 test accuracy (\%) and T4 latency. Latency averages
+per-seed medians at batch size one on noisy validation images, including
+preprocessing of decoded inputs and transfer to the GPU.}
+\label{tab:s4-confirmation}
+\input{tables/confirmation_s4}
+\end{table}
+
+Early-5 residual changed accuracy by $+0.35$, $-1.05$ and $+0.50$ points
+across bases (mean $-0.07$, between-base SD $0.85$, conditional paired
+95\% interval $[-0.53, 0.42]$). The mean teacher gap was 1.73 points
+(interval $[1.07, 2.40]$). Latency was $1.008\times$ the base and
+$0.230\times$ the teacher, within the prespecified limits of $1.10\times$
+and $0.50\times$, respectively. The run therefore met the latency
+criterion and fell short of the primary accuracy criterion. Direct
+distillation gained 0.57 points over the base on average in a secondary
+comparison (nominal conditional paired interval $[0.02, 1.13]$ points).
+Relative to the base, the residual head corrected 105 and introduced 109 errors across the three sets of predictions. Direct distillation corrected 165 and introduced 131. These counts sum over seed--image pairs on the same test set.
+The intervals quantify variation across test images
+conditional on the fitted bases.

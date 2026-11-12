@@ -221,7 +221,11 @@ def fit_head(
         )
     policy = dict(
         schema=1,
-        scope="posthoc_controls_s2_v1",
+        scope=(
+            "confirmation_v1"
+            if contract.get("protocol") == "confirmation_v1"
+            else "posthoc_controls_s2_v1"
+        ),
         contract=contract,
         checkpoint_sha256=file_digest(best_path),
         policy=selected,
@@ -252,8 +256,14 @@ def fit_head(
             indent=2,
         )
     )
+    dataset = contract.get("dataset", {"name": "cifar100n", "noisy_split": "noisy100"})
     (out / "report.md").write_text(
-        f"# Experiment Report: {out.name}\n\n## Configuration\nSee config.yaml.\n\n## Dataset\nCIFAR-100N noisy100; shared frozen meta partitions.\n\n## Checkpoint\nBest epoch {best_epoch}, meta-val KL {best:.6g}.\n\n## Metrics\nSee metrics.json.\n\n## Compact Results\nSee validation tables.\n\n## Generated Artifacts\nCheckpoints, frozen policy and selection grids.\n\n## Notes\nExploratory S2 control; no test accessed during fitting.\n"
+        f"# Experiment Report: {out.name}\n\n## Configuration\nSee config.yaml.\n\n"
+        f"## Dataset\n{dataset['name']} {dataset['noisy_split']}, frozen meta partitions.\n\n"
+        f"## Checkpoint\nBest epoch {best_epoch}, meta-val KL {best:.6g}.\n\n"
+        "## Metrics\nSee metrics.json.\n\n## Compact Results\nSee validation tables.\n\n"
+        "## Generated Artifacts\nCheckpoints, frozen policy and selection grids.\n\n"
+        "## Notes\nFitting used the sealed training and validation evidence.\n"
     )
     # Commit policy only after all required fit outputs are inspectable.
     (out / "artifacts/policy_before_test.json").write_text(json.dumps(policy, indent=2))

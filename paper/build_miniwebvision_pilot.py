@@ -55,7 +55,7 @@ def main():
         row["acc_pct"] = 100 * row["acc"]
         summary.append(row)
     with (SOURCE / "selected_methods.csv").open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(summary[0]))
+        writer = csv.DictWriter(stream, fieldnames=list(summary[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(summary)
     early = members(rows, "base_resnet50__early_mean")

@@ -1,6 +1,6 @@
 # Manuscript workspace
 
-[Download the current working manuscript PDF](revision/Room_for_Doubt_manuscript.pdf) (5 November 2026).
+[Download the current working manuscript PDF](revision/Room_for_Doubt_manuscript.pdf) (12 November 2026).
 
 `revision/main.tex` is the active, anonymous English working draft. The ICOMP
 layout is retained for editing; it is not a current submission or an accepted
@@ -23,9 +23,7 @@ The command-line build requires TeX Live with the standard `helvetic`, `times`,
 From the repository root:
 
 ```sh
-python paper/build_tables.py
-python paper/build_figures.py
-python paper/build_followups.py
+python paper/build_evidence.py
 cd paper/revision
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 bibtex main
@@ -47,8 +45,8 @@ numbers with the new ResNet50 evaluation. The augmentation controls cover all si
 rebuilt on its verified original checkpoint with the earlier policies reproduced.
 
 Nominal intervals are conditional paired test-example bootstrap intervals, not
-uncertainty across base training runs. Current test evidence is exploratory.
-Raw per-example predictions and full checkpoints are not included here.
+uncertainty across base training runs. The scalar test evidence is exploratory. The separate prespecified CIFAR-10.1 v6 evaluation is reported in the main text and did not meet the residual accuracy criterion.
+The prespecified CIFAR-10.2 direct comparison also missed its accuracy criterion. The teacher comparison is secondary. Raw per-example predictions and full checkpoints are not included here.
 
 ## Figure interpretation
 
@@ -193,7 +191,7 @@ Runtime-only notebook submitted: https://www.kaggle.com/code/tomahawkkz/cifar100
 Active Events showed Running once; no log polling. No new fitting or test evaluation.
 Actual runtime results remain pending; S2 quality/cost gate stays open.
 
-## PDF snapshot: 5 November 2026
+## Historical PDF snapshot: 5 November 2026
 
 The compiled working draft includes all four scalar-study datasets and the three-base
 CIFAR-100N posterior-compression controls. It is not an accepted paper. Runtime

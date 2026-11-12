@@ -6,8 +6,14 @@ The frozen Animal-10N transfer across three independent bases yields a smaller m
 Three Mini-WebVision bases retain positive Early-5 gains over selected TTA and the augmentation-matched static control, averaging 0.75 and 0.69 points. History-50 slightly exceeds Early-5 on one base, and only three of nine conditional accuracy intervals exclude zero for each comparison against TTA and augmented static. These replications broaden transfer evidence while retaining uncertainty about small accuracy gains and calibration.
 
 
-A separate exploratory posterior-compression branch improves mean CIFAR-100N
-accuracy from 69.60\% to 71.61\% across three bases. Stronger post-hoc controls
-reach 71.53\% with an ordinary soft-target head and71.87\% with independent
-teachers at additional training cost. These controls limit claims of a distinct
-temporal or residual-head advantage; deployment latency remains unmeasured.
+A separate posterior-compression branch improves mean accuracy from
+69.60\% to 71.61\% on the exploratory CIFAR-100N benchmark at near-base
+latency. In a prespecified evaluation on CIFAR-10.1 v6, the same residual
+recipe gives a mean change of $-0.07$ percentage points versus its base
+(conditional paired 95\% interval $[-0.53, 0.42]$) and meets the latency
+criterion. Direct distillation gains 0.57 points in a secondary comparison.
+
+On CIFAR-10.2, the five-checkpoint teacher exceeds a five-view static
+teacher by 2.10 percentage points in a secondary comparison. After
+direct distillation, the prespecified contrast is $-0.02$ points
+(conditional paired 95\% interval $[-0.53, 0.48]$).

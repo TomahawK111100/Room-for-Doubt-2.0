@@ -1,0 +1,10 @@
+defaults:
+  - temporal_base
+  - _self_
+run_id: base
+dataset:
+  name: cifar10n
+  noisy_split: worse
+  num_classes: 10
+num_workers: 0
+max_hours: 4.5

@@ -179,9 +179,9 @@ estimate. Substantial gains are therefore reproduced by single-snapshot
 distillation, limiting attribution of the full base-relative improvement to
 temporal aggregation. The simple two-pass interpolation is $.22$ points above
 the temporal student on each base, although the conditional intervals for
-this difference include zero. The temporal student's one-backbone-pass deployment
-may offer compression value; actual latency was not measured. A compute-matched
-non-temporal ensemble comparison and independent confirmation remain open.
+this difference include zero. The latency of the one-pass student and the five-pass teacher was measured
+separately on T4. The later CIFAR-10.1 evaluation did not confirm the
+residual accuracy gain (Section~\ref{sec:confirmation-s4}).
 
 \begin{figure}[ht]
 \centering

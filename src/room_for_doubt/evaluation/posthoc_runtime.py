@@ -36,13 +36,15 @@ class ForwardPlan:
                 hook.remove()
         if self.kind == "base":
             return outputs[self.base_key]
-        if self.kind == "student":
+        if self.kind in ("student", "direct"):
             p = outputs[self.base_key]
             if self.alpha == 0:
                 return p
-            return (
-                p.clamp_min(1e-12).log() + self.alpha * self.head(captured[0])
-            ).softmax(1)
+            log_base = p.clamp_min(1e-12).log()
+            residual = self.head(captured[0])
+            if self.kind == "direct":
+                residual = residual - log_base
+            return (log_base + self.alpha * residual).softmax(1)
         q = torch.stack([outputs[k] for k in self.teacher_keys]).mean(0)
         q = q / q.sum(1, keepdim=True)
         if self.kind == "teacher":
@@ -130,15 +132,15 @@ def benchmark(
     warmup=20,
     blocks=10,
     repeats=50,
+    plans=None,
+    protocol="s2_v1",
 ):
     if not str(device).startswith("cuda") or not torch.cuda.is_available():
-        raise RuntimeError(
-            "Real S2 timing requires CUDA; CPU timings cannot substitute"
-        )
+        raise RuntimeError("Runtime measurements require CUDA")
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
     contract = dict(
-        protocol="s2_v1",
+        protocol=protocol,
         warmup=warmup,
         blocks=blocks,
         repeats=repeats,
@@ -158,7 +160,7 @@ def benchmark(
     arrays = {s: load_evidence(v["cache"])[1] for s, v in sources.items()}
     bundles = {s: load_completed_run(v["base"], noisy) for s, v in sources.items()}
     selections = {}
-    for seed, s in sources.items():
+    for seed, s in sources.items() if plans is None else ():
         selections[seed], grid = choose_epoch(
             arrays[seed]["val_probs"],
             {
@@ -191,10 +193,14 @@ def benchmark(
         previous_blocks=len(rows),
     )
     (out / f"environment_{session}.json").write_text(json.dumps(env, indent=2))
-    transform = imagenet_transform(224)
-    names = ["base", "student", "selected1+base", "early2", "early5", "independent2"]
+    names = (
+        list(plans)
+        if plans is not None
+        else ["base", "student", "selected1+base", "early2", "early5", "independent2"]
+    )
     rng = np.random.default_rng(20261015)
-    for seed in (42, 43, 44):
+    for seed in sorted(sources):
+        transform = imagenet_transform(bundles[seed]["config"]["image_size"])
         decoded = [
             Image.fromarray(images[int(i)]) for i in arrays[seed]["val_ids"][:32]
         ]
@@ -212,9 +218,17 @@ def benchmark(
                         try:
                             gc.collect()
                             torch.cuda.empty_cache()
-                            plan, passes = make_plan(
-                                seed, name, sources, bundles, selections[seed], device
-                            )
+                            if plans is None:
+                                plan, passes = make_plan(
+                                    seed,
+                                    name,
+                                    sources,
+                                    bundles,
+                                    selections[seed],
+                                    device,
+                                )
+                            else:
+                                plan, passes = plans[name](bundles[seed])
                             x = cpu.to(device) if scope == "model_only" else None
 
                             def call():
@@ -285,7 +299,7 @@ def benchmark(
                         temp.write_text(json.dumps(rows, indent=2))
                         temp.replace(progress)
     compact = []
-    for seed in (42, 43, 44):
+    for seed in sorted(sources):
         for bs in (1, 32):
             for scope in ("model_only", "pipeline"):
                 for name in names:

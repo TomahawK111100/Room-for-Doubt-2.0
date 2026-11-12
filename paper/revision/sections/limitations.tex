@@ -19,4 +19,11 @@ fitting without the weights and train/validation arrays omitted from small
 exports. The original seed42 full epoch-selection grid was subsequently recovered
 and its ranking verified against the frozen policy.
 The supplementary tie-aware AURC is explicitly separate from historical risk-area
-calculations. Actual inference cost for this branch remains unmeasured.
+calculations. The S2 and S4 T4 benchmarks measure inference latency under fixed batch and preprocessing settings. Training cost remains unmatched across teacher constructions.
+
+\paragraph{Scope of the CIFAR-10.2 contrast.}
+The matched comparison varies the source of teacher diversity, with five
+early checkpoints on canonical images or five views from one early
+checkpoint. It does not isolate the order of training states or quantify
+variation over architectures and training recipes. The secondary
+teacher comparison measures performance with five passes.

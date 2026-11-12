@@ -9,7 +9,8 @@ from room_for_doubt.data.observed_images import imagenet_transform
 
 @torch.no_grad()
 def extract(
-    model, images, ids, image_size, batch_size, device, directory, prefix, with_features
+    model, images, ids, image_size, batch_size, device, directory, prefix, with_features,
+    *, image_view=None,
 ):
     root = Path(directory)
     root.mkdir(parents=True, exist_ok=True)
@@ -37,11 +38,17 @@ def extract(
             lambda _, inputs: captured.append(inputs[0].detach())
         )
     transform = imagenet_transform(image_size)
+
+    def input_tensor(image):
+        if image_view is not None:
+            image = image_view(image)
+        return transform(Image.fromarray(image))
+
     try:
         for start in range(0, len(ids), batch_size):
             part = ids[start : start + batch_size]
             x = torch.stack(
-                [transform(Image.fromarray(images[int(i)])) for i in part]
+                [input_tensor(images[int(i)]) for i in part]
             ).to(device)
             logits = model(x).float()
             if not torch.isfinite(logits).all():

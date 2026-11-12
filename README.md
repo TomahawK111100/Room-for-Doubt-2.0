@@ -37,8 +37,27 @@ predictions in `outputs/posthoc_controls_import_20261028_verified/`; this does
 not regenerate fitting without the omitted weights/train-validation arrays.
 The seed42 full epoch-selection grid was recovered from original Kaggle Output
 and its20-row ranking exactly matches the frozen policy.
-Runtime remains unmeasured. These are exploratory comparisons on a known test.
+A later frozen-model benchmark on one Tesla T4 measured 6.94 ms for the base, 7.09 ms for Early-5 residual, and 28.79 ms for its five-snapshot teacher at batch size one, including transforms of decoded inputs and GPU transfer. These are means of per-base medians from one hardware session. See Kaggle version 363133601 and the local import `outputs/posthoc_runtime_import_20261110/`. The accuracy comparisons remain exploratory on a known test.
 The manuscript records these separately from scalar-method results below.
+
+## Independent CIFAR-10.1 evaluation
+
+The prespecified evaluation on 2,000 CIFAR-10.1 v6 images used three frozen
+CIFAR-10N Worse bases. Early-5 residual reached 81.75% versus 81.82% for
+the base (mean difference −0.07 percentage points, conditional paired 95%
+interval [−0.53, +0.42]). It met the latency criterion (7.26 ms versus
+7.21 ms for the base and 31.64 ms for the five-snapshot teacher at batch
+size one on T4). The primary accuracy criterion was not met. Direct
+distillation reached 82.38% in a secondary comparison. The earlier
+CIFAR-100N posterior result remains exploratory.
+
+## CIFAR-10.2 teacher comparison
+
+Across three frozen bases, Early-5 direct scored 77.78% and Static-5 direct
+77.80%. The primary difference was −0.02 percentage points (conditional
+paired 95% interval [−0.53, +0.48]), below the prespecified 0.50-point
+threshold. The five-checkpoint teacher scored 79.37% versus 77.27% for the
+five-view static teacher in a secondary comparison. [Replay evidence](paper/evidence/teacher_cifar102/README.md)
 
 ## Current evidence
 
@@ -222,9 +241,7 @@ pass `post_run`; see the [follow-up instructions](docs/kaggle.md#follow-up-direc
 No base retraining is needed to regenerate the manuscript plots:
 
 ```bash
-python paper/build_tables.py
-python paper/build_figures.py
-python paper/build_followups.py
+python paper/build_evidence.py
 ```
 
 ## Local installation
@@ -300,13 +317,15 @@ python scripts/check_file_sizes.py --history
 
 No publication license has been selected by the project owner.
 
-## Plan to conference submission
+## Conference manuscript
 
-The ordered roadmap and acceptance gates are in [the conference roadmap](docs/planning/conference_roadmap.md). Execution state is in `docs/planning/conference_state.json`; the project is not yet submission-ready. Existing exploratory results are preserved, and new temporal-method transfer remains untested.
+[Working manuscript PDF, 12 November 2026](paper/revision/Room_for_Doubt_manuscript.pdf).
+The draft covers the four-dataset scalar study, the exploratory CIFAR-100N
+posterior controls and both external CIFAR-10 evaluations. The external tests
+missed the prespecified one-pass accuracy thresholds. The appendix reports
+calibration, error ranking and paired changes in correctness. See
+[reproduction instructions](docs/reproduction.md) for the frozen protocols,
+metric replay and manuscript build.
 
-### Current manuscript
-
-[Working manuscript PDF, 5 November 2026](paper/revision/Room_for_Doubt_manuscript.pdf).
-The PDF includes the four-dataset scalar study and the exploratory three-base
-posterior-compression controls. This is a working draft, not an accepted paper;
-its limitations and outstanding runtime evaluation are stated explicitly.
+The current draft is ready for coauthor review. Venue formatting, independent
+scientific review and release permissions are pending.

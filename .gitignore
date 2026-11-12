@@ -114,3 +114,5 @@ aris_repo/
 !/docs/planning/
 /docs/planning/*
 !/docs/planning/decisive_controls_protocol_v1.md
+!/docs/planning/confirmation_protocol_v1.md
+!/docs/planning/temporal_teacher_protocol_v1.md
